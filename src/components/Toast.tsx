@@ -39,7 +39,7 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
       {children}
       
       {/* Toast container */}
-      <div className="fixed bottom-4 right-4 z-[9999] flex flex-col gap-2 max-w-sm w-full pointer-events-none px-4 sm:px-0">
+      <div className="fixed bottom-4 right-4 z-[9999] flex flex-col items-end gap-2 max-w-sm pointer-events-none px-4 sm:px-0">
         {toasts.map((toast) => {
           const { id, type, message } = toast;
           
@@ -60,7 +60,7 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
           return (
             <div
               key={id}
-              className={`flex items-start justify-between gap-3 p-4 rounded-lg border shadow-lg pointer-events-auto transition-all duration-300 transform translate-y-0 animate-in fade-in slide-in-from-bottom-5 ${bgColor}`}
+              className={`flex items-center justify-between gap-5 py-3 px-4 rounded-lg border shadow-lg pointer-events-auto transition-all duration-300 transform translate-y-0 animate-in fade-in slide-in-from-bottom-5 ${bgColor}`}
             >
               <div className="flex gap-2.5">
                 {icon}
