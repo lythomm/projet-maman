@@ -58,6 +58,7 @@ export const create = mutation({
     startDate: v.string(),
     endDate: v.string(),
     delivery: v.boolean(),
+    deliveryAddress: v.optional(v.string()),
     items: v.array(
       v.object({
         itemId: v.id("items"),
@@ -117,7 +118,7 @@ export const create = mutation({
     console.log(`Client : ${args.firstName} ${args.lastName} (${args.email}, ${args.phone})`);
     console.log(`Période : ${args.startDate} au ${args.endDate}`);
     console.log(`Total : ${args.totalPrice}€, Caution : ${args.totalDeposit}€`);
-    console.log(`Livraison : ${args.delivery ? "Oui" : "Non"}`);
+    console.log(`Livraison : ${args.delivery ? "Oui" : "Non"}${args.delivery && args.deliveryAddress ? ` — Adresse : ${args.deliveryAddress}` : ""}`);
     console.log(`ID Réservation : ${bookingId}`);
 
     return bookingId;

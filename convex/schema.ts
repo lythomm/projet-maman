@@ -20,6 +20,7 @@ export default defineSchema({
     startDate: v.string(), // YYYY-MM-DD
     endDate: v.string(),   // YYYY-MM-DD
     delivery: v.boolean(),
+    deliveryAddress: v.optional(v.string()),
     items: v.array(
       v.object({
         itemId: v.id("items"),

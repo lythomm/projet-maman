@@ -53,20 +53,10 @@ export default function ItemDetailClient({ itemId }: ItemDetailClientProps) {
   const [isErrorDialogOpen, setIsErrorDialogOpen] = useState(false);
   const [unavailabilityMessage, setUnavailabilityMessage] = useState("");
 
-  const isLoaded = useRef(false);
+  const [isLoaded, setIsLoaded] = useState(false);
   const autoAddPending = useRef(false);
 
-  // Client info form states
-  const [firstName, setFirstName] = useState("");
-  const [lastName, setLastName] = useState("");
-  const [email, setEmail] = useState("");
-  const [phone, setPhone] = useState("");
-  const [delivery, setDelivery] = useState(false);
 
-  // Status of the submission
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [submitSuccess, setSubmitSuccess] = useState<string | null>(null);
-  const [submitError, setSubmitError] = useState<string | null>(null);
 
   // Fetch item, settings, and stock from Convex
   const item = useQuery(api.items.get, { id: validItemId });
@@ -77,7 +67,7 @@ export default function ItemDetailClient({ itemId }: ItemDetailClientProps) {
     startDate && endDate ? { startDate, endDate } : "skip"
   );
 
-  const createBooking = useMutation(api.bookings.create);
+
 
   // Calculate today and tomorrow
   const todayStr = new Date().toISOString().split("T")[0];
@@ -104,12 +94,12 @@ export default function ItemDetailClient({ itemId }: ItemDetailClientProps) {
     } catch (e) {
       console.error("Failed to load state from localStorage", e);
     }
-    isLoaded.current = true;
+    setIsLoaded(true);
   }, []);
 
   // Save state to localStorage on changes
   useEffect(() => {
-    if (!isLoaded.current) return;
+    if (!isLoaded) return;
     try {
       localStorage.setItem("startDate", startDate);
       localStorage.setItem("endDate", endDate);
@@ -117,7 +107,7 @@ export default function ItemDetailClient({ itemId }: ItemDetailClientProps) {
     } catch (e) {
       console.error("Failed to save state to localStorage", e);
     }
-  }, [startDate, endDate, cart]);
+  }, [startDate, endDate, cart, isLoaded]);
 
   // Reactive available stock auto-addition and validation
   useEffect(() => {
@@ -160,7 +150,7 @@ export default function ItemDetailClient({ itemId }: ItemDetailClientProps) {
           },
         ];
       });
-      setIsCartOpen(true);
+
       showToast("Matériel ajouté au panier.", "success");
     }
   }, [availableStocks, startDate, endDate, item]);
@@ -209,7 +199,7 @@ export default function ItemDetailClient({ itemId }: ItemDetailClientProps) {
       ];
     });
 
-    setIsCartOpen(true);
+
     showToast("Matériel ajouté au panier.", "success");
   };
 
@@ -236,12 +226,12 @@ export default function ItemDetailClient({ itemId }: ItemDetailClientProps) {
   const rentalDays =
     startDate && endDate
       ? Math.max(
-          1,
-          Math.ceil(
-            (new Date(endDate).getTime() - new Date(startDate).getTime()) /
-              (1000 * 60 * 60 * 24)
-          ) + 1
-        )
+        1,
+        Math.ceil(
+          (new Date(endDate).getTime() - new Date(startDate).getTime()) /
+          (1000 * 60 * 60 * 24)
+        ) + 1
+      )
       : 1;
 
   const itemsPriceTotal = Math.ceil(
@@ -250,8 +240,7 @@ export default function ItemDetailClient({ itemId }: ItemDetailClientProps) {
       0
     )
   );
-  const deliveryPrice = delivery && settings ? Math.ceil(settings.deliveryFee) : 0;
-  const grandTotal = Math.ceil(itemsPriceTotal + deliveryPrice);
+  const grandTotal = itemsPriceTotal;
   const cautionTotal = Math.ceil(
     cart.reduce((sum, i) => sum + Math.ceil(i.deposit) * i.quantity, 0)
   );
@@ -262,45 +251,7 @@ export default function ItemDetailClient({ itemId }: ItemDetailClientProps) {
     setCart([]); // Clear cart to avoid conflict
   };
 
-  const handleCheckout = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (cart.length === 0 || !startDate || !endDate) return;
 
-    setIsSubmitting(true);
-    setSubmitError(null);
-
-    try {
-      const orderItems = cart.map((i) => ({
-        itemId: i.itemId,
-        quantity: i.quantity,
-      }));
-
-      await createBooking({
-        firstName,
-        lastName,
-        email,
-        phone,
-        startDate,
-        endDate,
-        delivery,
-        items: orderItems,
-        totalPrice: grandTotal,
-        totalDeposit: cautionTotal,
-      });
-
-      setSubmitSuccess("Votre demande de réservation a été enregistrée avec succès !");
-      setCart([]);
-      setFirstName("");
-      setLastName("");
-      setEmail("");
-      setPhone("");
-      setDelivery(false);
-    } catch (err: any) {
-      setSubmitError(formatConvexError(err));
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
 
   if (item === undefined) {
     return (
@@ -371,34 +322,7 @@ export default function ItemDetailClient({ itemId }: ItemDetailClientProps) {
           <span>Retour au catalogue</span>
         </Link>
 
-        {/* Success / Error Banners */}
-        {submitSuccess && (
-          <div className="bg-white border border-brand-hairline rounded-xl p-6 text-left shadow-md max-w-2xl mb-12">
-            <div className="flex items-start space-x-4">
-              <div className="w-10 h-10 rounded-full bg-brand-soft border border-brand-hairline flex items-center justify-center text-badge-emerald shrink-0">
-                <CheckCircle className="w-6 h-6" />
-              </div>
-              <div className="flex-1">
-                <h3 className="text-base font-bold text-brand-primary mb-1">{submitSuccess}</h3>
-                <p className="text-slate-600 text-sm leading-relaxed">
-                  Votre demande a bien été envoyée à l'administrateur. Vous recevrez une réponse très prochainement.
-                </p>
-                <button
-                  onClick={() => setSubmitSuccess(null)}
-                  className="mt-4 px-4 py-2 bg-brand-primary hover:bg-brand-primary-active text-white rounded-md font-semibold text-xs tracking-tight transition"
-                >
-                  Fermer
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
 
-        {submitError && (
-          <div className="bg-rose-50 border border-rose-200 rounded-lg p-4 mb-8">
-            <p className="text-rose-800 font-semibold text-xs">{submitError}</p>
-          </div>
-        )}
 
         {/* Date Selector Banner replacement */}
         {startDate && endDate && (
@@ -538,7 +462,7 @@ export default function ItemDetailClient({ itemId }: ItemDetailClientProps) {
                   onClick={handleRentClick}
                   className="w-full h-12 bg-brand-primary hover:bg-brand-primary-active text-white rounded-md font-bold text-sm tracking-tight transition duration-200"
                 >
-                  {startDate && endDate ? "Louer ce matériel" : "Choisir des dates et louer"}
+                  {startDate && endDate ? "Ajouter au panier" : "Choisir des dates et louer"}
                 </button>
               )}
             </div>
@@ -728,40 +652,12 @@ export default function ItemDetailClient({ itemId }: ItemDetailClientProps) {
                       ))}
                     </div>
 
-                    {/* Delivery Toggle */}
-                    <div className="bg-brand-card rounded-lg p-4 border border-brand-hairline space-y-2">
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center space-x-2 text-brand-primary">
-                          <Truck className="w-4 h-4" />
-                          <span className="text-xs font-bold">Option Livraison</span>
-                        </div>
-                        <input
-                          type="checkbox"
-                          id="delivery"
-                          checked={delivery}
-                          onChange={(e) => setDelivery(e.target.checked)}
-                          className="w-4 h-4 text-brand-primary focus:ring-0 border-brand-hairline rounded-sm"
-                        />
-                      </div>
-                      {delivery && settings && (
-                        <p className="text-[11px] text-slate-500 leading-normal">
-                          Les frais de livraison fixes de <strong>{settings.deliveryFee}€</strong> ont été ajoutés.
-                        </p>
-                      )}
-                    </div>
-
                     {/* Cost summary */}
                     <div className="border-t border-brand-hairline pt-4 space-y-2.5">
                       <div className="flex justify-between text-xs text-slate-500">
                         <span>Sous-total matériel</span>
                         <span>{itemsPriceTotal}€</span>
                       </div>
-                      {delivery && (
-                        <div className="flex justify-between text-xs text-slate-500">
-                          <span>Frais de livraison</span>
-                          <span>{deliveryPrice}€</span>
-                        </div>
-                      )}
                       <div className="flex justify-between text-sm font-extrabold text-brand-primary border-t border-brand-hairline pt-2">
                         <span>Total Location</span>
                         <span>{grandTotal}€</span>
@@ -774,81 +670,16 @@ export default function ItemDetailClient({ itemId }: ItemDetailClientProps) {
                       </div>
                     </div>
 
-                    {/* Client form */}
-                    <form onSubmit={handleCheckout} className="border-t border-brand-hairline pt-6 space-y-4">
-                      <h3 className="font-bold text-xs text-brand-primary uppercase tracking-wider">
-                        Vos Coordonnées
-                      </h3>
-
-                      <div className="grid grid-cols-2 gap-3">
-                        <div>
-                          <label htmlFor="firstName" className="block text-[10px] font-semibold text-slate-500 mb-1">
-                            Prénom
-                          </label>
-                          <input
-                            type="text"
-                            id="firstName"
-                            required
-                            value={firstName}
-                            onChange={(e) => setFirstName(e.target.value)}
-                            placeholder="Jean"
-                            className="w-full h-10 px-3 rounded-md border border-brand-hairline bg-white text-sm focus:outline-hidden focus:border-brand-primary transition"
-                          />
-                        </div>
-                        <div>
-                          <label htmlFor="lastName" className="block text-[10px] font-semibold text-slate-500 mb-1">
-                            Nom
-                          </label>
-                          <input
-                            type="text"
-                            id="lastName"
-                            required
-                            value={lastName}
-                            onChange={(e) => setLastName(e.target.value)}
-                            placeholder="Dupont"
-                            className="w-full h-10 px-3 rounded-md border border-brand-hairline bg-white text-sm focus:outline-hidden focus:border-brand-primary transition"
-                          />
-                        </div>
-                      </div>
-
-                      <div>
-                        <label htmlFor="email" className="block text-[10px] font-semibold text-slate-500 mb-1">
-                          Email
-                        </label>
-                        <input
-                          type="email"
-                          id="email"
-                          required
-                          value={email}
-                          onChange={(e) => setEmail(e.target.value)}
-                          placeholder="jean.dupont@example.com"
-                          className="w-full h-10 px-3 rounded-md border border-brand-hairline bg-white text-sm focus:outline-hidden focus:border-brand-primary transition"
-                        />
-                      </div>
-
-                      <div>
-                        <label htmlFor="phone" className="block text-[10px] font-semibold text-slate-500 mb-1">
-                          Téléphone
-                        </label>
-                        <input
-                          type="tel"
-                          id="phone"
-                          required
-                          value={phone}
-                          onChange={(e) => setPhone(e.target.value)}
-                          placeholder="06 12 34 56 78"
-                          className="w-full h-10 px-3 rounded-md border border-brand-hairline bg-white text-sm focus:outline-hidden focus:border-brand-primary transition"
-                        />
-                      </div>
-
-                      <button
-                        type="submit"
-                        disabled={isSubmitting}
-                        className="w-full h-11 bg-brand-primary hover:bg-brand-primary-active disabled:opacity-50 text-white font-bold text-sm rounded-md transition duration-200"
+                    {/* Checkout Button */}
+                    <div className="border-t border-brand-hairline pt-6">
+                      <Link
+                        href="/checkout"
+                        className={`w-full h-11 bg-brand-primary hover:bg-brand-primary-active text-white font-bold text-sm rounded-md transition duration-200 flex items-center justify-center ${cart.length === 0 ? "opacity-50 pointer-events-none cursor-not-allowed" : ""
+                          }`}
                       >
-                        {isSubmitting ? "Envoi de la demande..." : "Envoyer ma demande"}
-                      </button>
-                    </form>
+                        Valider ma commande
+                      </Link>
+                    </div>
                   </>
                 )}
               </div>
