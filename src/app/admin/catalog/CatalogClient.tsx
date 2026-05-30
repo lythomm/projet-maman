@@ -534,10 +534,10 @@ export default function CatalogClient({ token }: CatalogClientProps) {
             <h2 className="text-2xl font-bold tracking-tight text-brand-primary">Catalogue & Matériels</h2>
             <button
               onClick={openNewItemModal}
-              className="flex items-center space-x-1.5 px-4 h-10 bg-brand-primary hover:bg-brand-primary-active text-white rounded-md text-sm font-bold transition cursor-pointer"
+              className="flex items-center justify-center gap-1.5 px-3 sm:px-4 h-10 bg-brand-primary hover:bg-brand-primary-active text-white rounded-md text-sm font-bold transition cursor-pointer"
             >
               <Plus className="w-4 h-4" />
-              <span>Ajouter un matériel</span>
+              <span className="hidden sm:inline">Ajouter un matériel</span>
             </button>
           </div>
 

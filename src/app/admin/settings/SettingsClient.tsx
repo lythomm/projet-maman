@@ -36,7 +36,7 @@ export default function SettingsClient({ token }: SettingsClientProps) {
 
   return (
     <AdminLayout>
-      <div className="max-w-xl bg-white rounded-lg border border-brand-hairline p-8 shadow-xs">
+      <div className="max-w-xl bg-brand-card rounded-lg border border-brand-hairline p-8 shadow-xs">
         <h2 className="text-2xl font-bold tracking-tight text-brand-primary mb-6">Paramètres Généraux</h2>
 
         {settings === undefined ? (
