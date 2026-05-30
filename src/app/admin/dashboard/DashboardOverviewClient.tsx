@@ -20,6 +20,7 @@ import {
 import AdminLayout from "../AdminLayout";
 
 import { formatConvexError } from "@/lib/error";
+import { prettyDisplayDate } from "@/lib/date";
 
 interface DashboardOverviewClientProps {
   token: string;
@@ -29,17 +30,6 @@ export default function DashboardOverviewClient({ token }: DashboardOverviewClie
   const { showToast } = useToast();
   const bookings = useQuery(api.bookings.list, { token });
   const items = useQuery(api.items.list);
-  const updateBookingStatus = useMutation(api.bookings.updateStatus);
-
-  const handleBookingStatus = async (id: Id<"bookings">, status: "accepted" | "rejected" | "pending") => {
-    try {
-      await updateBookingStatus({ token, id, status });
-      const statusText = status === "accepted" ? "acceptée" : status === "rejected" ? "refusée" : "remise en attente";
-      showToast(`Demande de réservation ${statusText}.`, "success");
-    } catch (err: any) {
-      showToast(formatConvexError(err), "error");
-    }
-  };
 
   const isLoading = bookings === undefined || items === undefined;
 
@@ -176,7 +166,7 @@ export default function DashboardOverviewClient({ token }: DashboardOverviewClie
                 ) : (
                   <div className="space-y-4">
                     {stats.recentPending.map((booking) => (
-                      <div key={booking._id} className="bg-white border border-brand-hairline rounded-lg p-5 shadow-3xs flex flex-col justify-between gap-4">
+                      <Link key={booking._id} href="/admin/bookings" className="block bg-white border border-brand-hairline rounded-lg p-5 shadow-3xs hover:shadow-xs hover:border-slate-300 transition duration-200 group">
                         <div className="space-y-3">
                           <div className="flex items-center justify-between">
                             <span className="text-xs font-semibold text-slate-700 bg-brand-soft border border-brand-hairline px-2 py-0.5 rounded-sm">
@@ -192,33 +182,14 @@ export default function DashboardOverviewClient({ token }: DashboardOverviewClie
 
                           <div className="flex items-center space-x-1.5 text-sm text-slate-600">
                             <Calendar className="w-4 h-4 text-slate-400" />
-                            <span>Du {booking.startDate} au {booking.endDate}</span>
-                          </div>
-
-                          <div className="text-sm border-t border-slate-100 pt-2.5 mt-2.5">
-                            <span className="text-xs font-extrabold text-slate-400 uppercase tracking-wider">Matériel demandé :</span>
-                            <div className="text-slate-700 font-semibold mt-1">
-                              {booking.items.map((item: any) => `${item.title} (x${item.quantity})`).join(", ")}
-                            </div>
+                            <span>{prettyDisplayDate(booking.startDate, booking.endDate)}</span>
                           </div>
                         </div>
 
-                        {/* Actions */}
-                        <div className="grid grid-cols-2 gap-2 border-t border-slate-100 pt-3.5">
-                          <button
-                            onClick={() => handleBookingStatus(booking._id, "accepted")}
-                            className="h-10 bg-brand-primary hover:bg-brand-primary-active text-white rounded-md text-sm font-bold transition cursor-pointer"
-                          >
-                            Accepter
-                          </button>
-                          <button
-                            onClick={() => handleBookingStatus(booking._id, "rejected")}
-                            className="h-10 bg-white border border-brand-hairline hover:bg-rose-50 text-slate-700 hover:text-rose-600 rounded-md text-sm font-bold transition cursor-pointer"
-                          >
-                            Refuser
-                          </button>
+                        <div className="text-xs font-bold text-brand-primary mt-3 pt-3 border-t border-slate-100 group-hover:underline flex items-center gap-1">
+                          Voir les détails <ChevronRight className="w-3.5 h-3.5" />
                         </div>
-                      </div>
+                      </Link>
                     ))}
                   </div>
                 )}
@@ -250,7 +221,7 @@ export default function DashboardOverviewClient({ token }: DashboardOverviewClie
                           </div>
                           <div className="text-slate-600 text-xs font-semibold flex items-center gap-1">
                             <Calendar className="w-3.5 h-3.5 text-slate-400" />
-                            Du {booking.startDate} au {booking.endDate}
+                            {prettyDisplayDate(booking.startDate, booking.endDate)}
                           </div>
                           <div className="text-slate-500 text-xs truncate max-w-xs">
                             {booking.items.map((i: any) => i.title).join(", ")}

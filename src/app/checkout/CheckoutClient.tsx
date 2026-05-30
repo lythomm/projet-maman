@@ -21,6 +21,7 @@ import {
   Loader2,
 } from "lucide-react";
 import { formatConvexError } from "@/lib/error";
+import { prettyDisplayDate } from "@/lib/date";
 
 interface CartItem {
   itemId: Id<"items">;
@@ -333,7 +334,7 @@ export default function CheckoutClient() {
               <div>
                 <p className="font-bold">Période de location :</p>
                 <p className="text-slate-600 mt-1 font-semibold">
-                  Du {new Date(startDate).toLocaleDateString("fr-FR")} au {new Date(endDate).toLocaleDateString("fr-FR")}
+                  {prettyDisplayDate(startDate, endDate)}
                 </p>
                 <p className="text-slate-500 text-[10px] mt-0.5">({rentalDays} jour{rentalDays > 1 ? "s" : ""})</p>
               </div>

@@ -15,6 +15,7 @@ import {
 import AdminLayout from "../AdminLayout";
 
 import { formatConvexError } from "@/lib/error";
+import { prettyDisplayDate } from "@/lib/date";
 
 interface BookingsClientProps {
   token: string;
@@ -114,7 +115,7 @@ export default function BookingsClient({ token }: BookingsClientProps) {
                     <div className="flex flex-wrap items-center gap-4 text-sm font-semibold text-slate-700">
                       <div className="flex items-center space-x-1.5">
                         <Calendar className="w-4 h-4 text-slate-400" />
-                        <span>Période : Du {booking.startDate} au {booking.endDate}</span>
+                        <span>Période : {prettyDisplayDate(booking.startDate, booking.endDate)}</span>
                       </div>
                       <div className="flex items-center space-x-1.5">
                         <Truck className="w-4 h-4 text-slate-400" />

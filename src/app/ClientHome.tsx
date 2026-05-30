@@ -23,6 +23,7 @@ import {
 } from "lucide-react";
 
 import { formatConvexError } from "@/lib/error";
+import { prettyDisplayDate } from "@/lib/date";
 
 interface CartItem {
   itemId: Id<"items">;
@@ -261,7 +262,7 @@ export default function ClientHome() {
             <div className="flex items-center space-x-3 text-brand-primary text-sm font-semibold">
               <Calendar className="w-4 h-4 text-brand-primary" />
               <span>
-                Location prévue du <strong className="font-extrabold">{new Date(startDate).toLocaleDateString("fr-FR")}</strong> au <strong className="font-extrabold">{new Date(endDate).toLocaleDateString("fr-FR")}</strong> ({rentalDays} jour{rentalDays > 1 ? "s" : ""})
+                Location prévue : <strong className="font-extrabold">{prettyDisplayDate(startDate, endDate)}</strong> ({rentalDays} jour{rentalDays > 1 ? "s" : ""})
               </span>
             </div>
             <button
