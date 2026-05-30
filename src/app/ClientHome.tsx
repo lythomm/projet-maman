@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useQuery, useMutation } from "convex/react";
+import { useToast } from "@/components/Toast";
 import { api } from "@/convex/_generated/api";
 import { Id } from "@/convex/_generated/dataModel";
 import {
@@ -31,6 +32,7 @@ interface CartItem {
 }
 
 export default function ClientHome() {
+  const { showToast } = useToast();
   // Date states
   const [startDate, setStartDate] = useState<string>("");
   const [endDate, setEndDate] = useState<string>("");
@@ -76,13 +78,13 @@ export default function ClientHome() {
   // Add to cart helper
   const addToCart = (item: any) => {
     if (!startDate || !endDate) {
-      alert("Veuillez sélectionner vos dates de début et de fin de location.");
+      showToast("Veuillez sélectionner vos dates de début et de fin de location.", "warning");
       return;
     }
 
     const available = getStockFor(item._id, item.stock);
     if (available <= 0) {
-      alert("Ce matériel n'est plus disponible aux dates sélectionnées.");
+      showToast("Ce matériel n'est plus disponible aux dates sélectionnées.", "error");
       return;
     }
 
