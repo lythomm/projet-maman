@@ -9,6 +9,7 @@ export default defineSchema({
     price: v.number(),                    // Rental price
     deposit: v.number(),                  // Caution per item
     stock: v.number(),                    // Max stock in inventory
+    categoryId: v.optional(v.id("categories")),
   }),
 
   bookings: defineTable({
@@ -34,6 +35,10 @@ export default defineSchema({
     ),
     createdAt: v.number(), // timestamp
   }).index("by_status", ["status"]),
+
+  categories: defineTable({
+    name: v.string(),
+  }).index("by_name", ["name"]),
 
   settings: defineTable({
     deliveryFee: v.number(),

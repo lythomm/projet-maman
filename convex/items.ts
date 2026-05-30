@@ -7,15 +7,17 @@ export const list = query({
   args: {},
   handler: async (ctx) => {
     const items = await ctx.db.query("items").collect();
-    // Resolve image URLs
+    // Resolve image URLs and category name
     const resolvedItems = await Promise.all(
       items.map(async (item) => {
         const imageUrls = await Promise.all(
           item.imageStorageIds.map((id) => ctx.storage.getUrl(id))
         );
+        const category = item.categoryId ? await ctx.db.get(item.categoryId) : null;
         return {
           ...item,
           imageUrls: imageUrls.filter((url): url is string => url !== null),
+          categoryName: category ? category.name : undefined,
         };
       })
     );
@@ -32,9 +34,11 @@ export const get = query({
     const imageUrls = await Promise.all(
       item.imageStorageIds.map((id) => ctx.storage.getUrl(id))
     );
+    const category = item.categoryId ? await ctx.db.get(item.categoryId) : null;
     return {
       ...item,
       imageUrls: imageUrls.filter((url): url is string => url !== null),
+      categoryName: category ? category.name : undefined,
     };
   },
 });
@@ -58,6 +62,7 @@ export const create = mutation({
     price: v.number(),
     deposit: v.number(),
     stock: v.number(),
+    categoryId: v.optional(v.id("categories")),
   },
   handler: async (ctx, args) => {
     await checkAuth(ctx.db, args.token);
@@ -77,6 +82,7 @@ export const update = mutation({
     price: v.number(),
     deposit: v.number(),
     stock: v.number(),
+    categoryId: v.optional(v.id("categories")),
   },
   handler: async (ctx, args) => {
     await checkAuth(ctx.db, args.token);

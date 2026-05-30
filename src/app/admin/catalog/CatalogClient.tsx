@@ -26,8 +26,9 @@ interface CatalogClientProps {
 
 export default function CatalogClient({ token }: CatalogClientProps) {
   const { showToast } = useToast();
-  // Fetch items
+  // Fetch items and categories
   const items = useQuery(api.items.list);
+  const categories = useQuery(api.categories.list);
 
   // Mutations
   const createItem = useMutation(api.items.create);
@@ -35,6 +36,10 @@ export default function CatalogClient({ token }: CatalogClientProps) {
   const removeItem = useMutation(api.items.remove);
   const generateUploadUrl = useMutation(api.items.generateUploadUrl);
   const deleteStorageFiles = useMutation(api.items.deleteStorageFiles);
+
+  const createCategory = useMutation(api.categories.create);
+  const updateCategory = useMutation(api.categories.update);
+  const removeCategory = useMutation(api.categories.remove);
 
   // Modal / form states for Catalog CRUD
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -49,6 +54,18 @@ export default function CatalogClient({ token }: CatalogClientProps) {
   const [initialStorageIds, setInitialStorageIds] = useState<string[]>([]);
   const [imagePreviews, setImagePreviews] = useState<string[]>([]);
 
+  // Item category states
+  const [selectedCategoryId, setSelectedCategoryId] = useState<string>("");
+  const [isCreatingNewCategory, setIsCreatingNewCategory] = useState(false);
+  const [quickNewCategoryName, setQuickNewCategoryName] = useState("");
+
+  // Categories management modal states
+  const [isCategoryModalOpen, setIsCategoryModalOpen] = useState(false);
+  const [editingCategory, setEditingCategory] = useState<{ id: string; name: string } | null>(null);
+  const [manageNewCategoryName, setManageNewCategoryName] = useState("");
+  const [renameCategoryName, setRenameCategoryName] = useState("");
+  const [categoryErrorMsg, setCategoryErrorMsg] = useState<string | null>(null);
+
   const [uploadingImage, setUploadingImage] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [step, setStep] = useState(1);
@@ -58,6 +75,10 @@ export default function CatalogClient({ token }: CatalogClientProps) {
     if (step === 1) {
       if (!title.trim() || !description.trim()) {
         setErrorMsg("Veuillez remplir le titre et la description.");
+        return;
+      }
+      if (selectedCategoryId === "__new__" && !quickNewCategoryName.trim()) {
+        setErrorMsg("Veuillez saisir le nom de la nouvelle catégorie.");
         return;
       }
     } else if (step === 2) {
@@ -86,6 +107,9 @@ export default function CatalogClient({ token }: CatalogClientProps) {
     setImageStorageIds([]);
     setInitialStorageIds([]);
     setImagePreviews([]);
+    setSelectedCategoryId("");
+    setIsCreatingNewCategory(false);
+    setQuickNewCategoryName("");
     setErrorMsg(null);
     setStep(1);
     setIsModalOpen(true);
@@ -102,6 +126,9 @@ export default function CatalogClient({ token }: CatalogClientProps) {
     setImageStorageIds(item.imageStorageIds || []);
     setInitialStorageIds(item.imageStorageIds || []);
     setImagePreviews(item.imageUrls || []);
+    setSelectedCategoryId(item.categoryId || "");
+    setIsCreatingNewCategory(false);
+    setQuickNewCategoryName("");
     setErrorMsg(null);
     setStep(1);
     setIsModalOpen(true);
@@ -238,6 +265,20 @@ export default function CatalogClient({ token }: CatalogClientProps) {
     }
 
     try {
+      let catIdParam = selectedCategoryId && selectedCategoryId !== "__new__" 
+        ? (selectedCategoryId as Id<"categories">) 
+        : undefined;
+
+      if (selectedCategoryId === "__new__") {
+        const trimmedName = quickNewCategoryName.trim();
+        if (!trimmedName) {
+          setErrorMsg("Veuillez saisir le nom de la catégorie.");
+          return;
+        }
+        const newCatId = await createCategory({ token, name: trimmedName });
+        catIdParam = newCatId;
+      }
+
       if (editingItem) {
         await updateItem({
           token,
@@ -248,6 +289,7 @@ export default function CatalogClient({ token }: CatalogClientProps) {
           deposit,
           stock,
           imageStorageIds: imageStorageIds as any,
+          categoryId: catIdParam,
         });
       } else {
         await createItem({
@@ -258,9 +300,10 @@ export default function CatalogClient({ token }: CatalogClientProps) {
           deposit,
           stock,
           imageStorageIds: imageStorageIds as any,
+          categoryId: catIdParam,
         });
       }
-      
+
       // Clean up old images that were removed during edit
       const removedStorageIds = initialStorageIds.filter(id => !imageStorageIds.includes(id));
       if (removedStorageIds.length > 0) {
@@ -388,6 +431,42 @@ export default function CatalogClient({ token }: CatalogClientProps) {
                     className="w-full p-3.5 border border-slate-200 bg-white rounded-md text-base focus:outline-hidden focus:border-brand-primary transition shadow-2xs"
                   />
                 </div>
+
+                <div>
+                  <label htmlFor="modalCategory" className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">
+                    Catégorie / Type
+                  </label>
+                  <select
+                    id="modalCategory"
+                    value={selectedCategoryId}
+                    onChange={(e) => {
+                      setSelectedCategoryId(e.target.value);
+                      if (e.target.value !== "__new__") {
+                        setQuickNewCategoryName("");
+                      }
+                    }}
+                    className="w-full h-11 px-3.5 border border-slate-200 bg-white rounded-md text-base focus:outline-hidden focus:border-brand-primary transition shadow-2xs"
+                  >
+                    <option value="">-- Sans catégorie --</option>
+                    {categories?.map((cat) => (
+                      <option key={cat._id} value={cat._id}>
+                        {cat.name}
+                      </option>
+                    ))}
+                    <option value="__new__">+ Créer une nouvelle catégorie...</option>
+                  </select>
+
+                  {selectedCategoryId === "__new__" && (
+                    <input
+                      type="text"
+                      required
+                      value={quickNewCategoryName}
+                      onChange={(e) => setQuickNewCategoryName(e.target.value)}
+                      placeholder="Nom de la nouvelle catégorie (ex: Décorations)"
+                      className="w-full h-11 px-3.5 border border-slate-200 bg-white rounded-md text-base focus:outline-hidden focus:border-brand-primary transition shadow-2xs mt-2"
+                    />
+                  )}
+                </div>
               </div>
             )}
 
@@ -396,7 +475,7 @@ export default function CatalogClient({ token }: CatalogClientProps) {
               <div className="space-y-4">
                 <div>
                   <label htmlFor="modalPrice" className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">
-                    Prix / Jour (€) *
+                    Prix (€) *
                   </label>
                   <input
                     type="number"
@@ -592,13 +671,24 @@ export default function CatalogClient({ token }: CatalogClientProps) {
         <div className="space-y-6">
           <div className="flex justify-between items-center">
             <h2 className="text-2xl font-bold tracking-tight text-brand-primary">Catalogue & Matériels</h2>
-            <button
-              onClick={openNewItemModal}
-              className="flex items-center justify-center gap-1.5 px-3 sm:px-4 h-10 bg-brand-primary hover:bg-brand-primary-active text-white rounded-md text-sm font-bold transition cursor-pointer"
-            >
-              <Plus className="w-4 h-4" />
-              <span className="hidden sm:inline">Ajouter un matériel</span>
-            </button>
+            <div className="flex items-center space-x-2">
+              <button
+                onClick={() => {
+                  setCategoryErrorMsg(null);
+                  setIsCategoryModalOpen(true);
+                }}
+                className="flex items-center justify-center gap-1.5 px-3 sm:px-4 h-10 bg-white border border-brand-hairline hover:bg-zinc-50 text-brand-primary rounded-md text-sm font-bold transition cursor-pointer"
+              >
+                <span>Gérer les catégories</span>
+              </button>
+              <button
+                onClick={openNewItemModal}
+                className="flex items-center justify-center gap-1.5 px-3 sm:px-4 h-10 bg-brand-primary hover:bg-brand-primary-active text-white rounded-md text-sm font-bold transition cursor-pointer"
+              >
+                <Plus className="w-4 h-4" />
+                <span className="hidden sm:inline">Ajouter un matériel</span>
+              </button>
+            </div>
           </div>
 
           {items === undefined ? (
@@ -632,6 +722,11 @@ export default function CatalogClient({ token }: CatalogClientProps) {
                     <div className="absolute top-2 right-2 bg-brand-dark/80 text-white px-2 py-0.5 rounded-sm text-xs font-bold">
                       Stock total : {item.stock}
                     </div>
+                    {item.categoryName && (
+                      <div className="absolute top-2 left-2 bg-brand-primary text-white px-2 py-0.5 rounded-sm text-[10px] font-extrabold uppercase tracking-wider">
+                        {item.categoryName}
+                      </div>
+                    )}
                   </div>
 
                   {/* Content */}
@@ -642,7 +737,7 @@ export default function CatalogClient({ token }: CatalogClientProps) {
 
                       <div className="grid grid-cols-2 gap-2 mt-4 pt-3 border-t border-slate-200/60 text-sm">
                         <div>
-                          <span className="text-slate-400 block">Prix / Jour</span>
+                          <span className="text-slate-400 block">Prix</span>
                           <span className="font-bold text-slate-800">{item.price}€</span>
                         </div>
                         <div>
@@ -674,6 +769,160 @@ export default function CatalogClient({ token }: CatalogClientProps) {
               ))}
             </div>
           )}
+        </div>
+      )}
+      {/* Categories Management Modal */}
+      {isCategoryModalOpen && (
+        <div className="fixed inset-0 z-50 overflow-hidden flex items-center justify-center">
+          <div
+            className="absolute inset-0 bg-slate-900/40 backdrop-blur-xs transition-opacity"
+            onClick={() => setIsCategoryModalOpen(false)}
+          />
+          <div className="relative bg-white rounded-xl border border-brand-hairline p-6 shadow-xl max-w-md w-full mx-4 z-10 text-slate-800 font-sans">
+            <button
+              onClick={() => setIsCategoryModalOpen(false)}
+              className="absolute top-4 right-4 p-1 rounded-md text-slate-400 hover:bg-brand-soft hover:text-slate-700 transition"
+            >
+              <X className="w-5 h-5" />
+            </button>
+
+            <h3 className="text-lg font-bold text-brand-primary mb-4">Gérer les catégories</h3>
+
+            {categoryErrorMsg && (
+              <div className="p-2.5 bg-rose-50 border border-rose-200 rounded-md text-xs font-semibold text-rose-700 mb-4">
+                {categoryErrorMsg}
+              </div>
+            )}
+
+            {/* Add Category Form */}
+            <form
+              onSubmit={async (e) => {
+                e.preventDefault();
+                setCategoryErrorMsg(null);
+                const trimmed = manageNewCategoryName.trim();
+                if (!trimmed) return;
+                try {
+                  await createCategory({ token, name: trimmed });
+                  setManageNewCategoryName("");
+                  showToast("Catégorie ajoutée !", "success");
+                } catch (err: any) {
+                  setCategoryErrorMsg(formatConvexError(err));
+                }
+              }}
+              className="flex space-x-2 mb-6"
+            >
+              <input
+                type="text"
+                required
+                value={manageNewCategoryName}
+                onChange={(e) => setManageNewCategoryName(e.target.value)}
+                placeholder="Nouvelle catégorie (ex: Mobilier)"
+                className="flex-1 h-10 px-3 border border-slate-200 bg-white rounded-md text-sm focus:outline-hidden focus:border-brand-primary transition"
+              />
+              <button
+                type="submit"
+                className="px-4 bg-brand-primary hover:bg-brand-primary-active text-white font-bold text-xs rounded-md transition cursor-pointer"
+              >
+                Ajouter
+              </button>
+            </form>
+
+            {/* Categories List */}
+            <div className="space-y-2.5 max-h-60 overflow-y-auto pr-1">
+              {categories === undefined ? (
+                <div className="text-center py-4">
+                  <Loader2 className="w-5 h-5 text-brand-primary animate-spin mx-auto" />
+                </div>
+              ) : categories.length === 0 ? (
+                <p className="text-xs text-slate-400 text-center py-4">Aucune catégorie créée pour le moment.</p>
+              ) : (
+                categories.map((cat) => (
+                  <div
+                    key={cat._id}
+                    className="flex items-center justify-between p-2 rounded-md bg-brand-soft border border-brand-hairline text-sm"
+                  >
+                    {editingCategory?.id === cat._id ? (
+                      <form
+                        onSubmit={async (e) => {
+                          e.preventDefault();
+                          setCategoryErrorMsg(null);
+                          const trimmed = renameCategoryName.trim();
+                          if (!trimmed) return;
+                          try {
+                            await updateCategory({ token, id: cat._id, name: trimmed });
+                            setEditingCategory(null);
+                            showToast("Catégorie renommée !", "success");
+                          } catch (err: any) {
+                            setCategoryErrorMsg(formatConvexError(err));
+                          }
+                        }}
+                        className="flex-1 flex items-center space-x-1.5"
+                      >
+                        <input
+                          type="text"
+                          required
+                          value={renameCategoryName}
+                          onChange={(e) => setRenameCategoryName(e.target.value)}
+                          className="flex-1 h-8 px-2 border border-slate-200 bg-white rounded-md text-xs focus:outline-hidden"
+                        />
+                        <button
+                          type="submit"
+                          className="px-2.5 h-8 bg-brand-primary text-white text-[10px] font-bold rounded-md hover:bg-brand-primary-active"
+                        >
+                          Sauver
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setEditingCategory(null)}
+                          className="px-2.5 h-8 bg-zinc-200 text-slate-600 text-[10px] font-bold rounded-md hover:bg-zinc-300"
+                        >
+                          Annuler
+                        </button>
+                      </form>
+                    ) : (
+                      <>
+                        <span className="font-semibold text-slate-800">{cat.name}</span>
+                        <div className="flex space-x-1">
+                          <button
+                            onClick={() => {
+                              setEditingCategory({ id: cat._id, name: cat.name });
+                              setRenameCategoryName(cat.name);
+                              setCategoryErrorMsg(null);
+                            }}
+                            className="p-1.5 text-slate-500 hover:text-brand-primary hover:bg-white rounded-md transition"
+                            title="Modifier"
+                          >
+                            <Edit2 className="w-3.5 h-3.5" />
+                          </button>
+                          <button
+                            onClick={async () => {
+                              if (
+                                !confirm(
+                                  "Voulez-vous vraiment supprimer cette catégorie ? Tous les matériels associés seront détachés."
+                                )
+                              )
+                                return;
+                              setCategoryErrorMsg(null);
+                              try {
+                                await removeCategory({ token, id: cat._id });
+                                showToast("Catégorie supprimée !", "success");
+                              } catch (err: any) {
+                                setCategoryErrorMsg(formatConvexError(err));
+                              }
+                            }}
+                            className="p-1.5 text-slate-500 hover:text-rose-600 hover:bg-rose-50 rounded-md transition"
+                            title="Supprimer"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
+                      </>
+                    )}
+                  </div>
+                ))
+              )}
+            </div>
+          </div>
         </div>
       )}
     </AdminLayout>

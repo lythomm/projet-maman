@@ -1,10 +1,11 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useQuery, useMutation } from "convex/react";
 import { useToast } from "@/components/Toast";
 import { api } from "@/convex/_generated/api";
 import { Id } from "@/convex/_generated/dataModel";
+import Link from "next/link";
 import {
   Calendar,
   ShoppingBag,
@@ -38,10 +39,43 @@ export default function ClientHome() {
   // Date states
   const [startDate, setStartDate] = useState<string>("");
   const [endDate, setEndDate] = useState<string>("");
+  const [isDatePickerOpen, setIsDatePickerOpen] = useState(false);
 
   // Cart state
   const [cart, setCart] = useState<CartItem[]>([]);
   const [isCartOpen, setIsCartOpen] = useState(false);
+
+  const isLoaded = useRef(false);
+
+  // Load from localStorage on mount
+  useEffect(() => {
+    try {
+      const storedStart = localStorage.getItem("startDate");
+      const storedEnd = localStorage.getItem("endDate");
+      const storedCart = localStorage.getItem("cart");
+
+      if (storedStart) setStartDate(storedStart);
+      if (storedEnd) setEndDate(storedEnd);
+      if (storedCart) {
+        setCart(JSON.parse(storedCart));
+      }
+    } catch (e) {
+      console.error("Failed to load state from localStorage", e);
+    }
+    isLoaded.current = true;
+  }, []);
+
+  // Save to localStorage when state changes
+  useEffect(() => {
+    if (!isLoaded.current) return;
+    try {
+      localStorage.setItem("startDate", startDate);
+      localStorage.setItem("endDate", endDate);
+      localStorage.setItem("cart", JSON.stringify(cart));
+    } catch (e) {
+      console.error("Failed to save state to localStorage", e);
+    }
+  }, [startDate, endDate, cart]);
 
   // Client info form states
   const [firstName, setFirstName] = useState("");
@@ -136,12 +170,12 @@ export default function ClientHome() {
   const rentalDays =
     startDate && endDate
       ? Math.max(
-          1,
-          Math.ceil(
-            (new Date(endDate).getTime() - new Date(startDate).getTime()) /
-              (1000 * 60 * 60 * 24)
-          ) + 1
-        )
+        1,
+        Math.ceil(
+          (new Date(endDate).getTime() - new Date(startDate).getTime()) /
+          (1000 * 60 * 60 * 24)
+        ) + 1
+      )
       : 1;
 
   const itemsPriceTotal = cart.reduce(
@@ -231,7 +265,7 @@ export default function ClientHome() {
 
       {/* Main Container */}
       <main className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
-        
+
         {/* Hero Section - Confident Display Typography */}
         <div className="text-left max-w-2xl mb-12">
           <h1 className="text-4xl sm:text-5xl font-semibold tracking-tighter text-brand-primary leading-tight">
@@ -242,48 +276,23 @@ export default function ClientHome() {
           </p>
         </div>
 
-        {/* Date Selector Banner - White card with hairline border */}
-        <div className="bg-white rounded-xl border border-brand-hairline p-6 mb-16 shadow-xs">
-          <div className="flex items-center space-x-2.5 mb-4 text-brand-primary font-semibold text-sm tracking-tight">
-            <Calendar className="w-4 h-4" />
-            <span>Sélectionnez votre période d'événement</span>
+        {/* Date Selector Banner replacement */}
+        {startDate && endDate && (
+          <div className="bg-brand-soft rounded-xl border border-brand-hairline p-4 mb-8 shadow-xs flex flex-col sm:flex-row items-center justify-between gap-4">
+            <div className="flex items-center space-x-3 text-brand-primary text-sm font-semibold">
+              <Calendar className="w-4 h-4 text-brand-primary" />
+              <span>
+                Location prévue du <strong className="font-extrabold">{new Date(startDate).toLocaleDateString("fr-FR")}</strong> au <strong className="font-extrabold">{new Date(endDate).toLocaleDateString("fr-FR")}</strong> ({rentalDays} jour{rentalDays > 1 ? "s" : ""})
+              </span>
+            </div>
+            <button
+              onClick={() => setIsDatePickerOpen(true)}
+              className="px-3.5 py-1.5 bg-white border border-brand-hairline hover:bg-zinc-50 text-brand-primary text-xs font-bold rounded-md transition"
+            >
+              Modifier les dates
+            </button>
           </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <label htmlFor="startDate" className="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1.5">
-                Date de début
-              </label>
-              <input
-                type="date"
-                id="startDate"
-                min={todayStr}
-                value={startDate}
-                onChange={(e) => handleDateChange(e.target.value, endDate)}
-                className="w-full h-10 px-3.5 rounded-md border border-brand-hairline bg-white text-slate-800 text-sm focus:outline-hidden focus:border-brand-primary transition"
-              />
-            </div>
-            <div>
-              <label htmlFor="endDate" className="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1.5">
-                Date de fin
-              </label>
-              <input
-                type="date"
-                id="endDate"
-                min={startDate || todayStr}
-                value={endDate}
-                onChange={(e) => handleDateChange(startDate, e.target.value)}
-                className="w-full h-10 px-3.5 rounded-md border border-brand-hairline bg-white text-slate-800 text-sm focus:outline-hidden focus:border-brand-primary transition"
-              />
-            </div>
-          </div>
-          {startDate && endDate && (
-            <div className="mt-4 flex items-center justify-between text-xs text-slate-500 bg-brand-soft p-3 rounded-md border border-brand-hairline">
-              <span>Durée totale : <strong className="text-brand-primary font-semibold">{rentalDays} jour(s)</strong></span>
-              <span className="text-brand-accent font-semibold">Stocks actualisés pour ces dates.</span>
-            </div>
-          )}
-        </div>
+        )}
 
         {/* Success Modal / Banner */}
         {submitSuccess && (
@@ -316,15 +325,7 @@ export default function ClientHome() {
         )}
 
         {/* Catalogue section */}
-        {!startDate || !endDate ? (
-          <div className="text-center py-20 bg-brand-soft rounded-xl border border-brand-hairline max-w-2xl mx-auto">
-            <Calendar className="w-8 h-8 text-slate-400 mx-auto mb-3" />
-            <h3 className="text-sm font-semibold text-brand-primary tracking-tight">Sélectionnez des dates</h3>
-            <p className="text-slate-500 text-xs mt-1.5 max-w-xs mx-auto leading-relaxed">
-              Veuillez configurer vos dates de location en haut de page pour vérifier la disponibilité de nos matériels.
-            </p>
-          </div>
-        ) : items === undefined ? (
+        {items === undefined ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
             {[1, 2, 3].map((n) => (
               <div key={n} className="bg-brand-card rounded-lg h-80 animate-pulse" />
@@ -339,27 +340,27 @@ export default function ClientHome() {
         ) : (
           <div>
             <h2 className="text-lg font-bold tracking-tight text-brand-primary mb-6">
-              Matériels disponibles <span className="text-xs text-slate-400 font-normal">({items.length})</span>
+              Nos matériels <span className="text-xs text-slate-400 font-normal">({items.length})</span>
             </h2>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
               {items.map((item) => {
                 const available = getStockFor(item._id, item.stock);
                 const isOutOfStock = available <= 0;
-                const inCartItem = cart.find((i) => i.itemId === item._id);
 
                 return (
-                  <div
+                  <Link
                     key={item._id}
-                    className="flex flex-col bg-brand-card hover:bg-zinc-100 rounded-lg overflow-hidden border border-brand-hairline transition duration-200"
+                    href={`/items/${item._id}`}
+                    className="group flex flex-col bg-white rounded-lg overflow-hidden border border-slate-200 hover:shadow-md hover:border-slate-300 transition duration-200 cursor-pointer"
                   >
                     {/* Image Area - Product UI embedded fragment */}
-                    <div className="relative aspect-video w-full bg-zinc-200 border-b border-brand-hairline flex items-center justify-center overflow-hidden">
+                    <div className="relative aspect-video w-full bg-zinc-50 border-b border-slate-200/80 flex items-center justify-center overflow-hidden">
                       {item.imageUrls && item.imageUrls.length > 0 ? (
                         <img
                           src={item.imageUrls[0]}
                           alt={item.title}
-                          className="w-full h-full object-cover transition-transform duration-300 hover:scale-102"
+                          className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-102"
                         />
                       ) : (
                         <div className="flex flex-col items-center justify-center text-slate-400">
@@ -369,77 +370,53 @@ export default function ClientHome() {
                       )}
                       {isOutOfStock ? (
                         <div className="absolute inset-0 bg-white/70 backdrop-blur-xs flex items-center justify-center">
-                          <span className="px-3 py-1 bg-brand-dark text-white font-extrabold text-[10px] uppercase tracking-wider rounded-md">
+                          <span className="px-2.5 py-1 bg-zinc-800 text-white font-extrabold text-[10px] uppercase tracking-wider rounded-md">
                             Épuisé
-                          </span>
-                        </div>
-                      ) : available <= 3 ? (
-                        <div className="absolute top-2 right-2">
-                          <span className="px-2 py-0.5 bg-badge-orange text-white font-bold text-[9px] uppercase rounded-sm">
-                            Stock : {available} restants
                           </span>
                         </div>
                       ) : null}
                     </div>
 
                     {/* Details content inside card */}
-                    <div className="p-6 flex-1 flex flex-col justify-between">
+                    <div className="p-4 flex-1 flex flex-col justify-between space-y-4">
                       <div>
-                        <h3 className="text-sm font-bold tracking-tight text-brand-primary leading-tight">{item.title}</h3>
-                        <p className="text-xs text-slate-500 mt-2 line-clamp-2 leading-relaxed">{item.description}</p>
+                        {item.categoryName && (
+                          <span className="text-[10px] text-brand-accent uppercase tracking-wider font-extrabold block mb-1">
+                            {item.categoryName}
+                          </span>
+                        )}
+                        {/* Title - changes color on group hover to match Amazon anchor behaviors */}
+                        <h3 className="text-sm font-bold tracking-tight text-slate-900 leading-tight group-hover:text-brand-accent transition-colors duration-200">
+                          {item.title}
+                        </h3>
+                        <p className="text-xs text-slate-500 mt-1 line-clamp-2 leading-relaxed">
+                          {item.description}
+                        </p>
                       </div>
 
-                      <div className="mt-6 pt-4 border-t border-slate-200/60">
-                        {/* Features rows */}
-                        <div className="grid grid-cols-2 gap-2 mb-4 text-xs">
-                          <div>
-                            <span className="text-slate-400 block mb-0.5">Prix / Jour</span>
-                            <span className="font-extrabold text-brand-primary text-sm">{item.price}€</span>
-                          </div>
-                          <div>
-                            <span className="text-slate-400 block mb-0.5">Caution unit.</span>
-                            <span className="font-bold text-slate-600">{item.deposit}€</span>
-                          </div>
+                      <div className="pt-2 border-t border-slate-100 flex flex-col justify-between">
+                        {/* Pricing details */}
+                        <div className="flex items-baseline space-x-1">
+                          <span className="text-lg font-extrabold text-slate-900">{item.price}€</span>
+                          <span className="text-[10px] text-slate-500 font-normal">/ jour</span>
                         </div>
-
-                        {/* CTA button (Confient SaaS style) */}
+                        {/* Stock status indicator */}
                         {isOutOfStock ? (
-                          <button
-                            disabled
-                            className="w-full h-10 bg-zinc-200 text-slate-400 rounded-md font-semibold text-xs cursor-not-allowed"
-                          >
-                            Indisponible
-                          </button>
-                        ) : inCartItem ? (
-                          <div className="flex items-center justify-between bg-white border border-brand-hairline rounded-md p-1">
-                            <button
-                              onClick={() => updateQuantity(item._id, -1)}
-                              className="p-1.5 text-slate-600 hover:bg-brand-soft rounded-md transition"
-                            >
-                              <Minus className="w-3.5 h-3.5" />
-                            </button>
-                            <span className="font-bold text-brand-primary text-xs">
-                              {inCartItem.quantity} réservé(s)
-                            </span>
-                            <button
-                              onClick={() => updateQuantity(item._id, 1)}
-                              disabled={inCartItem.quantity >= available}
-                              className="p-1.5 text-slate-600 hover:bg-brand-soft rounded-md disabled:opacity-30 transition"
-                            >
-                              <Plus className="w-3.5 h-3.5" />
-                            </button>
-                          </div>
+                          <p className="text-rose-600 text-[10px] font-bold mt-2">Actuellement indisponible.</p>
+                        ) : startDate && endDate ? (
+                          available <= 3 ? (
+                            <p className="text-amber-600 text-[10px] font-bold mt-2">
+                              Plus que {available} en stock - commandez vite.
+                            </p>
+                          ) : (
+                            <p className="text-emerald-600 text-[10px] font-bold mt-2">En stock.</p>
+                          )
                         ) : (
-                          <button
-                            onClick={() => addToCart(item)}
-                            className="w-full h-10 bg-brand-primary hover:bg-brand-primary-active text-white rounded-md font-bold text-xs tracking-tight transition duration-200"
-                          >
-                            Ajouter au panier
-                          </button>
+                          <p className="text-slate-500 text-[10px] italic mt-2">Vérifier stock aux dates voulues.</p>
                         )}
                       </div>
                     </div>
-                  </div>
+                  </Link>
                 );
               })}
             </div>
@@ -457,7 +434,7 @@ export default function ClientHome() {
 
           <div className="absolute inset-y-0 right-0 max-w-full flex pl-10">
             <div className="w-screen max-w-md bg-white shadow-xl flex flex-col h-full border-l border-brand-hairline">
-              
+
               {/* Header Drawer */}
               <div className="px-6 py-5 bg-white border-b border-brand-hairline flex items-center justify-between">
                 <div className="flex items-center space-x-2 text-brand-primary">
@@ -662,6 +639,66 @@ export default function ClientHome() {
                   </>
                 )}
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+      {/* Date Picker Modal */}
+      {isDatePickerOpen && (
+        <div className="fixed inset-0 z-50 overflow-hidden flex items-center justify-center">
+          <div
+            className="absolute inset-0 bg-slate-900/40 backdrop-blur-xs transition-opacity"
+            onClick={() => setIsDatePickerOpen(false)}
+          />
+          <div className="relative bg-white rounded-xl border border-brand-hairline p-6 shadow-xl max-w-md w-full mx-4 z-10">
+            <button
+              onClick={() => setIsDatePickerOpen(false)}
+              className="absolute top-4 right-4 p-1 rounded-md text-slate-400 hover:bg-brand-soft hover:text-slate-700 transition"
+            >
+              <X className="w-5 h-5" />
+            </button>
+
+            <div className="flex items-center space-x-2.5 mb-4 text-brand-primary font-semibold text-sm tracking-tight">
+              <Calendar className="w-4 h-4" />
+              <span>Définir la période de location</span>
+            </div>
+
+            <div className="space-y-4">
+              <div>
+                <label htmlFor="modalStartDate" className="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1.5">
+                  Date de début
+                </label>
+                <input
+                  type="date"
+                  id="modalStartDate"
+                  min={todayStr}
+                  value={startDate}
+                  onChange={(e) => handleDateChange(e.target.value, endDate)}
+                  className="w-full h-10 px-3.5 rounded-md border border-brand-hairline bg-white text-slate-800 text-sm focus:outline-hidden focus:border-brand-primary transition"
+                />
+              </div>
+              <div>
+                <label htmlFor="modalEndDate" className="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1.5">
+                  Date de fin
+                </label>
+                <input
+                  type="date"
+                  id="modalEndDate"
+                  min={startDate || todayStr}
+                  value={endDate}
+                  onChange={(e) => handleDateChange(startDate, e.target.value)}
+                  className="w-full h-10 px-3.5 rounded-md border border-brand-hairline bg-white text-slate-800 text-sm focus:outline-hidden focus:border-brand-primary transition"
+                />
+              </div>
+            </div>
+
+            <div className="mt-6 flex justify-end space-x-3">
+              <button
+                onClick={() => setIsDatePickerOpen(false)}
+                className="px-4 py-2 bg-brand-primary hover:bg-brand-primary-active text-white rounded-md font-bold text-xs tracking-tight transition"
+              >
+                Confirmer
+              </button>
             </div>
           </div>
         </div>
