@@ -738,11 +738,11 @@ export default function CatalogClient({ token }: CatalogClientProps) {
                       <div className="grid grid-cols-2 gap-2 mt-4 pt-3 border-t border-slate-200/60 text-sm">
                         <div>
                           <span className="text-slate-400 block">Prix</span>
-                          <span className="font-bold text-slate-800">{item.price}€</span>
+                          <span className="font-bold text-slate-800">{Math.ceil(item.price)}€</span>
                         </div>
                         <div>
                           <span className="text-slate-400 block">Caution</span>
-                          <span className="font-bold text-slate-800">{item.deposit}€</span>
+                          <span className="font-bold text-slate-800">{Math.ceil(item.deposit)}€</span>
                         </div>
                       </div>
                     </div>

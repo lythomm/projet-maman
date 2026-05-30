@@ -41,6 +41,9 @@ export default function ClientHome() {
   const [endDate, setEndDate] = useState<string>("");
   const [isDatePickerOpen, setIsDatePickerOpen] = useState(false);
 
+  // Filter state
+  const [selectedFilter, setSelectedFilter] = useState<string>("Tous");
+
   // Cart state
   const [cart, setCart] = useState<CartItem[]>([]);
   const [isCartOpen, setIsCartOpen] = useState(false);
@@ -92,6 +95,31 @@ export default function ClientHome() {
   // Fetch items from Convex
   const items = useQuery(api.items.list);
   const settings = useQuery(api.settings.get);
+
+  // Group items by category
+  const groupedItems = items
+    ? items.reduce(
+      (groups, item) => {
+        const catName = item.categoryName || "Autres";
+        if (!groups[catName]) {
+          groups[catName] = [];
+        }
+        groups[catName].push(item);
+        return groups;
+      },
+      {} as Record<string, typeof items>
+    )
+    : {};
+
+  const sortedCategories = Object.keys(groupedItems).sort((a, b) => {
+    if (a === "Autres") return 1;
+    if (b === "Autres") return -1;
+    return a.localeCompare(b);
+  });
+
+  const activeFilter = selectedFilter === "Tous" || sortedCategories.includes(selectedFilter)
+    ? selectedFilter
+    : "Tous";
 
   // Fetch dynamic stock if dates are selected
   const availableStocks = useQuery(
@@ -178,13 +206,17 @@ export default function ClientHome() {
       )
       : 1;
 
-  const itemsPriceTotal = cart.reduce(
-    (sum, item) => sum + item.price * item.quantity * rentalDays,
-    0
+  const itemsPriceTotal = Math.ceil(
+    cart.reduce(
+      (sum, item) => sum + Math.ceil(item.price) * item.quantity * rentalDays,
+      0
+    )
   );
-  const deliveryPrice = delivery && settings ? settings.deliveryFee : 0;
-  const grandTotal = itemsPriceTotal + deliveryPrice;
-  const cautionTotal = cart.reduce((sum, item) => sum + item.deposit * item.quantity, 0);
+  const deliveryPrice = delivery && settings ? Math.ceil(settings.deliveryFee) : 0;
+  const grandTotal = Math.ceil(itemsPriceTotal + deliveryPrice);
+  const cautionTotal = Math.ceil(
+    cart.reduce((sum, item) => sum + Math.ceil(item.deposit) * item.quantity, 0)
+  );
 
   // Reset cart when dates change to prevent stock conflicts
   const handleDateChange = (start: string, end: string) => {
@@ -268,12 +300,9 @@ export default function ClientHome() {
 
         {/* Hero Section - Confident Display Typography */}
         <div className="text-left max-w-2xl mb-12">
-          <h1 className="text-4xl sm:text-5xl font-semibold tracking-tighter text-brand-primary leading-tight">
-            The better way to rent event equipment.
+          <h1 className="text-4xl font-semibold tracking-tighter text-brand-primary leading-tight">
+            Location de matériel pour vos évènements
           </h1>
-          <p className="mt-3 text-base text-slate-600 font-normal">
-            Sélectionnez vos dates, constituez votre panier de matériel et soumettez votre demande de location instantanément.
-          </p>
         </div>
 
         {/* Date Selector Banner replacement */}
@@ -338,88 +367,125 @@ export default function ClientHome() {
             <p className="text-slate-500 text-xs mt-1">Aucun matériel n'est enregistré pour le moment.</p>
           </div>
         ) : (
-          <div>
-            <h2 className="text-lg font-bold tracking-tight text-brand-primary mb-6">
-              Nos matériels <span className="text-xs text-slate-400 font-normal">({items.length})</span>
-            </h2>
+          <div className="space-y-12">
+            {/* Filter pills */}
+            <div className="flex flex-wrap gap-2 pb-2 border-b border-brand-hairline">
+              <button
+                onClick={() => setSelectedFilter("Tous")}
+                className={`px-4 py-2 text-xs font-bold rounded-full border transition duration-200 cursor-pointer select-none ${activeFilter === "Tous"
+                  ? "bg-brand-primary text-white border-brand-primary shadow-xs"
+                  : "bg-white text-slate-600 border-slate-200 hover:border-slate-300 hover:bg-zinc-50"
+                  }`}
+              >
+                Tous ({items.length})
+              </button>
+              {sortedCategories.map((catName) => (
+                <button
+                  key={catName}
+                  onClick={() => setSelectedFilter(catName)}
+                  className={`px-4 py-2 text-xs font-bold rounded-full border transition duration-200 cursor-pointer select-none ${activeFilter === catName
+                    ? "bg-brand-primary text-white border-brand-primary shadow-xs"
+                    : "bg-white text-slate-600 border-slate-200 hover:border-slate-300 hover:bg-zinc-50"
+                    }`}
+                >
+                  {catName} ({groupedItems[catName].length})
+                </button>
+              ))}
+            </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-              {items.map((item) => {
-                const available = getStockFor(item._id, item.stock);
-                const isOutOfStock = available <= 0;
-
+            {sortedCategories
+              .filter((catName) => activeFilter === "Tous" || activeFilter === catName)
+              .map((catName) => {
+                const catItems = groupedItems[catName];
                 return (
-                  <Link
-                    key={item._id}
-                    href={`/items/${item._id}`}
-                    className="group flex flex-col bg-white rounded-lg overflow-hidden border border-slate-200 hover:shadow-md hover:border-slate-300 transition duration-200 cursor-pointer"
-                  >
-                    {/* Image Area - Product UI embedded fragment */}
-                    <div className="relative aspect-video w-full bg-zinc-50 border-b border-slate-200/80 flex items-center justify-center overflow-hidden">
-                      {item.imageUrls && item.imageUrls.length > 0 ? (
-                        <img
-                          src={item.imageUrls[0]}
-                          alt={item.title}
-                          className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-102"
-                        />
-                      ) : (
-                        <div className="flex flex-col items-center justify-center text-slate-400">
-                          <Package className="w-8 h-8 mb-2" />
-                          <span className="text-[10px] font-medium tracking-tight">Pas d'image</span>
-                        </div>
-                      )}
-                      {isOutOfStock ? (
-                        <div className="absolute inset-0 bg-white/70 backdrop-blur-xs flex items-center justify-center">
-                          <span className="px-2.5 py-1 bg-zinc-800 text-white font-extrabold text-[10px] uppercase tracking-wider rounded-md">
-                            Épuisé
-                          </span>
-                        </div>
-                      ) : null}
+                  <div key={catName} className="space-y-6">
+                    <div className="flex items-center space-x-4">
+                      <h2 className="text-lg font-bold tracking-tight text-brand-primary shrink-0 uppercase">
+                        {catName} <span className="text-xs text-slate-400 font-normal lowercase">({catItems.length})</span>
+                      </h2>
+                      <div className="h-px bg-slate-200 flex-grow" />
                     </div>
 
-                    {/* Details content inside card */}
-                    <div className="p-4 flex-1 flex flex-col justify-between space-y-4">
-                      <div>
-                        {item.categoryName && (
-                          <span className="text-[10px] text-brand-accent uppercase tracking-wider font-extrabold block mb-1">
-                            {item.categoryName}
-                          </span>
-                        )}
-                        {/* Title - changes color on group hover to match Amazon anchor behaviors */}
-                        <h3 className="text-sm font-bold tracking-tight text-slate-900 leading-tight group-hover:text-brand-accent transition-colors duration-200">
-                          {item.title}
-                        </h3>
-                        <p className="text-xs text-slate-500 mt-1 line-clamp-2 leading-relaxed">
-                          {item.description}
-                        </p>
-                      </div>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                      {catItems.map((item) => {
+                        const available = getStockFor(item._id, item.stock);
+                        const isOutOfStock = available <= 0;
 
-                      <div className="pt-2 border-t border-slate-100 flex flex-col justify-between">
-                        {/* Pricing details */}
-                        <div className="flex items-baseline space-x-1">
-                          <span className="text-lg font-extrabold text-slate-900">{item.price}€</span>
-                          <span className="text-[10px] text-slate-500 font-normal">/ jour</span>
-                        </div>
-                        {/* Stock status indicator */}
-                        {isOutOfStock ? (
-                          <p className="text-rose-600 text-[10px] font-bold mt-2">Actuellement indisponible.</p>
-                        ) : startDate && endDate ? (
-                          available <= 3 ? (
-                            <p className="text-amber-600 text-[10px] font-bold mt-2">
-                              Plus que {available} en stock - commandez vite.
-                            </p>
-                          ) : (
-                            <p className="text-emerald-600 text-[10px] font-bold mt-2">En stock.</p>
-                          )
-                        ) : (
-                          <p className="text-slate-500 text-[10px] italic mt-2">Vérifier stock aux dates voulues.</p>
-                        )}
-                      </div>
+                        return (
+                          <Link
+                            key={item._id}
+                            href={`/items/${item._id}`}
+                            className="group flex flex-col bg-white rounded-lg overflow-hidden border border-slate-200 hover:shadow-md hover:border-slate-300 transition duration-200 cursor-pointer"
+                          >
+                            {/* Image Area - Product UI embedded fragment */}
+                            <div className="relative aspect-video w-full bg-zinc-50 border-b border-slate-200/80 flex items-center justify-center overflow-hidden">
+                              {item.imageUrls && item.imageUrls.length > 0 ? (
+                                <img
+                                  src={item.imageUrls[0]}
+                                  alt={item.title}
+                                  className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-102"
+                                />
+                              ) : (
+                                <div className="flex flex-col items-center justify-center text-slate-400">
+                                  <Package className="w-8 h-8 mb-2" />
+                                  <span className="text-[10px] font-medium tracking-tight">Pas d'image</span>
+                                </div>
+                              )}
+                              {isOutOfStock ? (
+                                <div className="absolute inset-0 bg-white/70 backdrop-blur-xs flex items-center justify-center">
+                                  <span className="px-2.5 py-1 bg-zinc-800 text-white font-extrabold text-[10px] uppercase tracking-wider rounded-md">
+                                    Épuisé
+                                  </span>
+                                </div>
+                              ) : null}
+                            </div>
+
+                            {/* Details content inside card */}
+                            <div className="p-4 flex-1 flex flex-col justify-between space-y-4">
+                              <div>
+                                {item.categoryName && (
+                                  <span className="text-[10px] text-brand-accent uppercase tracking-wider font-extrabold block mb-1">
+                                    {item.categoryName}
+                                  </span>
+                                )}
+                                {/* Title - changes color on group hover to match Amazon anchor behaviors */}
+                                <h3 className="text-sm font-bold tracking-tight text-slate-900 leading-tight group-hover:text-brand-accent transition-colors duration-200">
+                                  {item.title}
+                                </h3>
+                                <p className="text-xs text-slate-500 mt-1 line-clamp-2 leading-relaxed">
+                                  {item.description}
+                                </p>
+                              </div>
+
+                              <div className="pt-2 border-t border-slate-100 flex flex-col justify-between">
+                                {/* Pricing details */}
+                                <div className="flex items-baseline space-x-1">
+                                  <span className="text-lg font-extrabold text-slate-900">{Math.ceil(item.price)}€</span>
+                                  <span className="text-[10px] text-slate-500 font-normal">/ jour</span>
+                                </div>
+                                {/* Stock status indicator */}
+                                {isOutOfStock ? (
+                                  <p className="text-rose-600 text-[10px] font-bold mt-2">Actuellement indisponible.</p>
+                                ) : startDate && endDate ? (
+                                  available <= 3 ? (
+                                    <p className="text-amber-600 text-[10px] font-bold mt-2">
+                                      Plus que {available} en stock - commandez vite.
+                                    </p>
+                                  ) : (
+                                    <p className="text-emerald-600 text-[10px] font-bold mt-2">En stock.</p>
+                                  )
+                                ) : (
+                                  <p className="text-slate-500 text-[10px] italic mt-2">Vérifier stock aux dates voulues.</p>
+                                )}
+                              </div>
+                            </div>
+                          </Link>
+                        );
+                      })}
                     </div>
-                  </Link>
+                  </div>
                 );
               })}
-            </div>
           </div>
         )}
       </main>
@@ -480,7 +546,7 @@ export default function ClientHome() {
                           <div className="flex-1 min-w-0">
                             <h4 className="font-bold text-brand-primary text-xs leading-snug truncate">{item.title}</h4>
                             <span className="text-[11px] text-slate-500">
-                              {item.price}€ × {item.quantity} × {rentalDays}j
+                              {Math.ceil(item.price)}€ × {item.quantity} × {rentalDays}j
                             </span>
 
                             <div className="flex items-center justify-between mt-2">

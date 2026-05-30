@@ -244,13 +244,17 @@ export default function ItemDetailClient({ itemId }: ItemDetailClientProps) {
         )
       : 1;
 
-  const itemsPriceTotal = cart.reduce(
-    (sum, i) => sum + i.price * i.quantity * rentalDays,
-    0
+  const itemsPriceTotal = Math.ceil(
+    cart.reduce(
+      (sum, i) => sum + Math.ceil(i.price) * i.quantity * rentalDays,
+      0
+    )
   );
-  const deliveryPrice = delivery && settings ? settings.deliveryFee : 0;
-  const grandTotal = itemsPriceTotal + deliveryPrice;
-  const cautionTotal = cart.reduce((sum, i) => sum + i.deposit * i.quantity, 0);
+  const deliveryPrice = delivery && settings ? Math.ceil(settings.deliveryFee) : 0;
+  const grandTotal = Math.ceil(itemsPriceTotal + deliveryPrice);
+  const cautionTotal = Math.ceil(
+    cart.reduce((sum, i) => sum + Math.ceil(i.deposit) * i.quantity, 0)
+  );
 
   const handleDateChange = (start: string, end: string) => {
     setStartDate(start);
@@ -460,11 +464,11 @@ export default function ItemDetailClient({ itemId }: ItemDetailClientProps) {
                 </h1>
                 <div className="mt-3 flex items-center space-x-3">
                   <span className="text-2xl font-extrabold text-brand-primary">
-                    {item.price}€ <span className="text-xs text-slate-500 font-normal">/ jour</span>
+                    {Math.ceil(item.price)}€ <span className="text-xs text-slate-500 font-normal">/ jour</span>
                   </span>
                   <span className="h-4 w-px bg-slate-300"></span>
                   <span className="text-sm text-slate-600 font-medium">
-                    Caution : {item.deposit}€
+                    Caution : {Math.ceil(item.deposit)}€
                   </span>
                 </div>
               </div>
@@ -687,7 +691,7 @@ export default function ItemDetailClient({ itemId }: ItemDetailClientProps) {
                               {cartItem.title}
                             </h4>
                             <span className="text-[11px] text-slate-500">
-                              {cartItem.price}€ × {cartItem.quantity} × {rentalDays}j
+                              {Math.ceil(cartItem.price)}€ × {cartItem.quantity} × {rentalDays}j
                             </span>
 
                             <div className="flex items-center justify-between mt-2">
