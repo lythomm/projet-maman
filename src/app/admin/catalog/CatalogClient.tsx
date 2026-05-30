@@ -17,6 +17,7 @@ import {
   Loader2,
 } from "lucide-react";
 import AdminLayout from "../AdminLayout";
+import { formatConvexError } from "@/lib/error";
 
 interface CatalogClientProps {
   token: string;
@@ -32,6 +33,7 @@ export default function CatalogClient({ token }: CatalogClientProps) {
   const updateItem = useMutation(api.items.update);
   const removeItem = useMutation(api.items.remove);
   const generateUploadUrl = useMutation(api.items.generateUploadUrl);
+  const deleteStorageFiles = useMutation(api.items.deleteStorageFiles);
 
   // Modal / form states for Catalog CRUD
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -43,6 +45,7 @@ export default function CatalogClient({ token }: CatalogClientProps) {
   const [deposit, setDeposit] = useState(0);
   const [stock, setStock] = useState(1);
   const [imageStorageIds, setImageStorageIds] = useState<string[]>([]);
+  const [initialStorageIds, setInitialStorageIds] = useState<string[]>([]);
   const [imagePreviews, setImagePreviews] = useState<string[]>([]);
 
   const [uploadingImage, setUploadingImage] = useState(false);
@@ -80,6 +83,7 @@ export default function CatalogClient({ token }: CatalogClientProps) {
     setDeposit(0);
     setStock(1);
     setImageStorageIds([]);
+    setInitialStorageIds([]);
     setImagePreviews([]);
     setErrorMsg(null);
     setStep(1);
@@ -95,6 +99,7 @@ export default function CatalogClient({ token }: CatalogClientProps) {
     setDeposit(item.deposit);
     setStock(item.stock);
     setImageStorageIds(item.imageStorageIds || []);
+    setInitialStorageIds(item.imageStorageIds || []);
     setImagePreviews(item.imageUrls || []);
     setErrorMsg(null);
     setStep(1);
@@ -138,15 +143,24 @@ export default function CatalogClient({ token }: CatalogClientProps) {
       setImagePreviews((prev) => [...prev, ...newPreviewUrls]);
       showToast(`${results.length} image(s) ajoutée(s) !`, "success");
     } catch (err: any) {
-      setErrorMsg(err.message || "Erreur de compression ou de transfert.");
-      showToast(err.message || "Erreur de compression ou de transfert.", "error");
+      const formatted = formatConvexError(err);
+      setErrorMsg(formatted);
+      showToast(formatted, "error");
     } finally {
       setUploadingImage(false);
     }
   };
 
   // Remove image
-  const handleRemoveImage = (index: number) => {
+  const handleRemoveImage = async (index: number) => {
+    const imageId = imageStorageIds[index];
+    if (imageId && !initialStorageIds.includes(imageId)) {
+      try {
+        await deleteStorageFiles({ token, storageIds: [imageId] as any });
+      } catch (err) {
+        console.error("Failed to delete removed image from storage:", err);
+      }
+    }
     setImageStorageIds((prev) => prev.filter((_, i) => i !== index));
     setImagePreviews((prev) => prev.filter((_, i) => i !== index));
   };
@@ -232,7 +246,7 @@ export default function CatalogClient({ token }: CatalogClientProps) {
           price,
           deposit,
           stock,
-          imageStorageIds,
+          imageStorageIds: imageStorageIds as any,
         });
       } else {
         await createItem({
@@ -242,15 +256,40 @@ export default function CatalogClient({ token }: CatalogClientProps) {
           price,
           deposit,
           stock,
-          imageStorageIds,
+          imageStorageIds: imageStorageIds as any,
         });
       }
+      
+      // Clean up old images that were removed during edit
+      const removedStorageIds = initialStorageIds.filter(id => !imageStorageIds.includes(id));
+      if (removedStorageIds.length > 0) {
+        try {
+          await deleteStorageFiles({ token, storageIds: removedStorageIds as any });
+        } catch (err) {
+          console.error("Failed to delete removed files:", err);
+        }
+      }
+
       showToast(editingItem ? "Matériel mis à jour !" : "Matériel créé avec succès !", "success");
       setIsModalOpen(false);
     } catch (err: any) {
-      setErrorMsg(err.message || "Erreur de sauvegarde de l'objet.");
-      showToast(err.message || "Erreur de sauvegarde de l'objet.", "error");
+      const formatted = formatConvexError(err);
+      setErrorMsg(formatted);
+      showToast(formatted, "error");
     }
+  };
+
+  // Handle cancel & cleanup new images
+  const handleCancel = async () => {
+    const newStorageIds = imageStorageIds.filter(id => !initialStorageIds.includes(id));
+    if (newStorageIds.length > 0) {
+      try {
+        await deleteStorageFiles({ token, storageIds: newStorageIds as any });
+      } catch (err) {
+        console.error("Failed to delete unused uploaded files:", err);
+      }
+    }
+    setIsModalOpen(false);
   };
 
   // Delete handler
@@ -260,7 +299,7 @@ export default function CatalogClient({ token }: CatalogClientProps) {
       await removeItem({ token, id });
       showToast("Matériel supprimé avec succès !", "success");
     } catch (err: any) {
-      showToast(err.message || "Erreur de suppression.", "error");
+      showToast(formatConvexError(err), "error");
     }
   };
 
@@ -275,7 +314,7 @@ export default function CatalogClient({ token }: CatalogClientProps) {
             </h2>
             <button
               type="button"
-              onClick={() => setIsModalOpen(false)}
+              onClick={handleCancel}
               className="p-1.5 rounded-md text-slate-400 hover:bg-brand-soft hover:text-slate-700 transition"
             >
               <X className="w-5 h-5" />
@@ -485,7 +524,7 @@ export default function CatalogClient({ token }: CatalogClientProps) {
               <div>
                 <button
                   type="button"
-                  onClick={() => setIsModalOpen(false)}
+                  onClick={handleCancel}
                   className="px-4 h-10 border border-slate-200 text-slate-500 rounded-md text-sm font-bold hover:bg-brand-soft transition cursor-pointer"
                 >
                   Annuler

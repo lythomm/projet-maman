@@ -21,6 +21,8 @@ import {
   Package,
 } from "lucide-react";
 
+import { formatConvexError } from "@/lib/error";
+
 interface CartItem {
   itemId: Id<"items">;
   title: string;
@@ -192,7 +194,7 @@ export default function ClientHome() {
       setPhone("");
       setDelivery(false);
     } catch (err: any) {
-      setSubmitError(err.message || "Une erreur est survenue lors de la réservation.");
+      setSubmitError(formatConvexError(err));
     } finally {
       setIsSubmitting(false);
     }

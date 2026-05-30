@@ -4,6 +4,8 @@ import { cookies } from "next/headers";
 import { ConvexHttpClient } from "convex/browser";
 import { api } from "@/convex/_generated/api";
 
+import { formatConvexError } from "@/lib/error";
+
 const convexUrl = process.env.NEXT_PUBLIC_CONVEX_URL || "http://127.0.0.1:3210";
 const convex = new ConvexHttpClient(convexUrl);
 
@@ -24,7 +26,7 @@ export async function adminLoginAction(password: string) {
     
     return { success: true };
   } catch (error: any) {
-    return { success: false, error: error.message || "Mot de passe incorrect" };
+    return { success: false, error: formatConvexError(error) };
   }
 }
 

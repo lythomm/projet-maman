@@ -70,10 +70,10 @@ export const create = mutation({
   handler: async (ctx, args) => {
     // 1. Validate dates are valid format (YYYY-MM-DD)
     if (!/^\d{4}-\d{2}-\d{2}$/.test(args.startDate) || !/^\d{4}-\d{2}-\d{2}$/.test(args.endDate)) {
-      throw new Error("Invalid date format. Expected YYYY-MM-DD.");
+      throw new Error("Format de date invalide. Attendu : AAAA-MM-JJ.");
     }
     if (args.startDate > args.endDate) {
-      throw new Error("Start date must be before or equal to end date.");
+      throw new Error("La date de début doit être antérieure ou égale à la date de fin.");
     }
 
     // 2. Double-check stock (optimistic checking)
@@ -97,11 +97,11 @@ export const create = mutation({
     // Check each requested item
     for (const reqItem of args.items) {
       const item = await ctx.db.get(reqItem.itemId);
-      if (!item) throw new Error("Item not found");
+      if (!item) throw new Error("Matériel introuvable.");
       const reserved = allocated[reqItem.itemId] || 0;
       const available = item.stock - reserved;
       if (reqItem.quantity > available) {
-        throw new Error(`Insufficient stock for: ${item.title}. Required: ${reqItem.quantity}, Available: ${available}`);
+        throw new Error(`Stock insuffisant pour ${item.title}. Demandé : ${reqItem.quantity}, Disponible : ${available}.`);
       }
     }
 
@@ -166,7 +166,7 @@ export const updateStatus = mutation({
     await checkAuth(ctx.db, args.token);
     
     const booking = await ctx.db.get(args.id);
-    if (!booking) throw new Error("Booking not found");
+    if (!booking) throw new Error("Réservation introuvable.");
 
     // If accepting, double-check stock conflicts
     if (args.status === "accepted") {
@@ -188,7 +188,7 @@ export const updateStatus = mutation({
 
       for (const reqItem of booking.items) {
         const item = await ctx.db.get(reqItem.itemId);
-        if (!item) throw new Error("Item not found");
+        if (!item) throw new Error("Matériel introuvable.");
         const reserved = allocated[reqItem.itemId] || 0;
         const available = item.stock - reserved;
         if (reqItem.quantity > available) {

@@ -14,6 +14,8 @@ import {
 } from "lucide-react";
 import AdminLayout from "../AdminLayout";
 
+import { formatConvexError } from "@/lib/error";
+
 interface BookingsClientProps {
   token: string;
 }
@@ -31,7 +33,7 @@ export default function BookingsClient({ token }: BookingsClientProps) {
       const statusText = status === "accepted" ? "acceptée" : status === "rejected" ? "refusée" : "remise en attente";
       showToast(`Demande de réservation ${statusText}.`, "success");
     } catch (err: any) {
-      showToast(err.message || "Impossible de mettre à jour le statut.", "error");
+      showToast(formatConvexError(err), "error");
     }
   };
 
@@ -42,7 +44,7 @@ export default function BookingsClient({ token }: BookingsClientProps) {
       await removeBooking({ token, id });
       showToast("Demande de réservation supprimée.", "success");
     } catch (err: any) {
-      showToast(err.message || "Erreur lors de la suppression.", "error");
+      showToast(formatConvexError(err), "error");
     }
   };
 

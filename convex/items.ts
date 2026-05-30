@@ -54,7 +54,7 @@ export const create = mutation({
     token: v.string(),
     title: v.string(),
     description: v.string(),
-    imageStorageIds: v.array(v.string()),
+    imageStorageIds: v.array(v.id("_storage")),
     price: v.number(),
     deposit: v.number(),
     stock: v.number(),
@@ -73,7 +73,7 @@ export const update = mutation({
     id: v.id("items"),
     title: v.string(),
     description: v.string(),
-    imageStorageIds: v.array(v.string()),
+    imageStorageIds: v.array(v.id("_storage")),
     price: v.number(),
     deposit: v.number(),
     stock: v.number(),
@@ -91,7 +91,7 @@ export const remove = mutation({
   handler: async (ctx, args) => {
     await checkAuth(ctx.db, args.token);
     const item = await ctx.db.get(args.id);
-    if (!item) throw new Error("Item not found");
+    if (!item) throw new Error("Matériel introuvable.");
 
     // Clean up images in storage
     for (const imageId of item.imageStorageIds) {
@@ -103,5 +103,23 @@ export const remove = mutation({
     }
 
     await ctx.db.delete(args.id);
+  },
+});
+
+// Delete storage files (Admin only)
+export const deleteStorageFiles = mutation({
+  args: {
+    token: v.string(),
+    storageIds: v.array(v.id("_storage")),
+  },
+  handler: async (ctx, args) => {
+    await checkAuth(ctx.db, args.token);
+    for (const storageId of args.storageIds) {
+      try {
+        await ctx.storage.delete(storageId);
+      } catch (e) {
+        console.error("Failed to delete storage file from Convex:", storageId, e);
+      }
+    }
   },
 });

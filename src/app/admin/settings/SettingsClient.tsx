@@ -7,6 +7,8 @@ import { useToast } from "@/components/Toast";
 import { Loader2 } from "lucide-react";
 import AdminLayout from "../AdminLayout";
 
+import { formatConvexError } from "@/lib/error";
+
 interface SettingsClientProps {
   token: string;
 }
@@ -30,7 +32,7 @@ export default function SettingsClient({ token }: SettingsClientProps) {
       await updateSettings({ token, deliveryFee: Number(deliveryFee) });
       showToast("Frais de livraison mis à jour !", "success");
     } catch (err: any) {
-      showToast(err.message || "Erreur de mise à jour des paramètres.", "error");
+      showToast(formatConvexError(err), "error");
     }
   };
 

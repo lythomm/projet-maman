@@ -8,7 +8,7 @@ export const login = action({
   handler: async (ctx, args) => {
     const adminPassword = process.env.ADMIN_PASSWORD || "password";
     if (args.password !== adminPassword) {
-      throw new Error("Invalid password");
+      throw new Error("Mot de passe incorrect.");
     }
 
     // Generate secure session token
@@ -60,7 +60,7 @@ export async function checkAuth(db: DatabaseReader, token: string) {
     .withIndex("by_token", (q) => q.eq("token", token))
     .unique();
   if (!session || session.expiresAt < Date.now()) {
-    throw new Error("Unauthorized");
+    throw new Error("Session expirée ou non autorisée.");
   }
   return true;
 }

@@ -5,7 +5,7 @@ export default defineSchema({
   items: defineTable({
     title: v.string(),
     description: v.string(),
-    imageStorageIds: v.array(v.string()), // Convex Storage IDs
+    imageStorageIds: v.array(v.id("_storage")), // Convex Storage IDs
     price: v.number(),                    // Rental price
     deposit: v.number(),                  // Caution per item
     stock: v.number(),                    // Max stock in inventory
