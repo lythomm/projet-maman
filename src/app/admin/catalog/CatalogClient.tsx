@@ -9,6 +9,7 @@ import { compressImage } from "@/lib/image-compress";
 import {
   Package,
   Plus,
+  Minus,
   Trash2,
   Edit2,
   X,
@@ -431,16 +432,36 @@ export default function CatalogClient({ token }: CatalogClientProps) {
                   <label htmlFor="modalStock" className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">
                     Stock total disponible *
                   </label>
-                  <input
-                    type="number"
-                    id="modalStock"
-                    required
-                    min={1}
-                    value={stock}
-                    onChange={(e) => setStock(Number(e.target.value))}
-                    placeholder="1"
-                    className="w-full h-11 px-3.5 border border-slate-200 bg-white rounded-md text-base focus:outline-hidden focus:border-brand-primary transition shadow-2xs"
-                  />
+                  <div className="flex items-center space-x-2 w-full">
+                    <input
+                      type="number"
+                      id="modalStock"
+                      required
+                      min={1}
+                      value={stock}
+                      onChange={(e) => {
+                        const val = Number(e.target.value);
+                        setStock(isNaN(val) || val < 1 ? 1 : val);
+                      }}
+                      placeholder="1"
+                      className="flex-1 h-11 border border-slate-200 bg-white rounded-md text-center text-base font-bold focus:outline-hidden focus:border-brand-primary transition shadow-2xs [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setStock((prev) => Math.max(1, prev - 1))}
+                      disabled={stock <= 1}
+                      className="w-11 h-11 border border-slate-200 hover:bg-brand-soft disabled:opacity-40 disabled:hover:bg-transparent rounded-md flex items-center justify-center text-slate-600 transition shrink-0 cursor-pointer select-none"
+                    >
+                      <Minus className="w-4 h-4" />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setStock((prev) => prev + 1)}
+                      className="w-11 h-11 border border-slate-200 hover:bg-brand-soft rounded-md flex items-center justify-center text-slate-600 transition shrink-0 cursor-pointer select-none"
+                    >
+                      <Plus className="w-4 h-4" />
+                    </button>
+                  </div>
                 </div>
               </div>
             )}
