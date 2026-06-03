@@ -141,7 +141,12 @@ export default function BookingsClient({ token }: BookingsClientProps) {
                   className="bg-white rounded-xl border border-brand-hairline shadow-xs overflow-hidden flex flex-col transition hover:shadow-sm"
                 >
                   {/* Card Header: Request Date, Status, Total Location Price */}
-                  <div className="bg-white border-b border-brand-hairline px-6 py-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                  <div className={`border-b border-brand-hairline px-6 py-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 ${isAccepted
+                      ? "bg-emerald-50/50"
+                      : isRejected
+                        ? "bg-rose-50/50"
+                        : "bg-white"
+                    }`}>
                     <div className="flex flex-wrap items-center gap-2 sm:gap-3">
                       <span className="text-xs font-semibold text-slate-500">
                         Reçu le {new Date(booking.createdAt).toLocaleDateString("fr-FR")}
