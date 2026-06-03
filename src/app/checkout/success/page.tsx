@@ -31,7 +31,7 @@ export default function CheckoutSuccessPage() {
         </h1>
 
         <p className="text-slate-600 text-md max-w-lg leading-relaxed mb-4">
-          Votre demande a bien été envoyée à l&apos;administrateur. Vous recevrez une réponse très prochainement pour convenir des modalités logistiques.
+          Votre demande a bien été envoyée. Vous recevrez une réponse très prochainement pour convenir des modalités logistiques.
         </p>
 
         <div className="bg-brand-soft border border-brand-hairline rounded-lg p-4 max-w-lg text-left mb-8">

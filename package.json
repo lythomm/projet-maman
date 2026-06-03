@@ -10,10 +10,12 @@
   },
   "dependencies": {
     "convex": "^1.39.1",
+    "embla-carousel-react": "^8.6.0",
     "lucide-react": "^1.17.0",
     "next": "^15.5.18",
     "react": "19.2.4",
-    "react-dom": "19.2.4"
+    "react-dom": "19.2.4",
+    "yet-another-react-lightbox": "^3.32.0"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",

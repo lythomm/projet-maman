@@ -22,7 +22,13 @@ import {
   Package,
   ArrowLeft,
   AlertTriangle,
+  ChevronLeft,
+  ChevronRight,
+  Maximize2,
 } from "lucide-react";
+import useEmblaCarousel from "embla-carousel-react";
+import Lightbox from "yet-another-react-lightbox";
+import "yet-another-react-lightbox/styles.css";
 
 import { formatConvexError } from "@/lib/error";
 import { prettyDisplayDate } from "@/lib/date";
@@ -97,6 +103,32 @@ export default function ItemDetailClient({ itemId }: ItemDetailClientProps) {
     }
     setIsLoaded(true);
   }, []);
+
+  // Carousel & Lightbox state
+  const [emblaRef, emblaApi] = useEmblaCarousel({ loop: true });
+  const [selectedIndex, setSelectedIndex] = useState(0);
+  const [lightboxOpen, setLightboxOpen] = useState(false);
+  const [lightboxIndex, setLightboxIndex] = useState(0);
+
+  useEffect(() => {
+    if (!emblaApi) return;
+    const onSelect = () => {
+      setSelectedIndex(emblaApi.selectedScrollSnap());
+    };
+    emblaApi.on("select", onSelect);
+    return () => {
+      emblaApi.off("select", onSelect);
+    };
+  }, [emblaApi]);
+
+  const scrollTo = (index: number) => {
+    emblaApi?.scrollTo(index);
+  };
+
+  const handleImageClick = (index: number) => {
+    setLightboxIndex(index);
+    setLightboxOpen(true);
+  };
 
   // Save state to localStorage on changes
   useEffect(() => {
@@ -347,13 +379,57 @@ export default function ItemDetailClient({ itemId }: ItemDetailClientProps) {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-12 mt-4">
           {/* Left: Image gallery */}
           <div className="space-y-4">
-            <div className="aspect-video w-full rounded-xl bg-zinc-100 border border-brand-hairline flex items-center justify-center overflow-hidden relative">
+            <div className="relative aspect-video w-full rounded-xl bg-zinc-100 border border-brand-hairline overflow-hidden group">
               {item.imageUrls && item.imageUrls.length > 0 ? (
-                <img
-                  src={item.imageUrls[0]}
-                  alt={item.title}
-                  className="w-full h-full object-cover"
-                />
+                <>
+                  {/* Embla Viewport */}
+                  <div className="overflow-hidden w-full h-full cursor-zoom-in" ref={emblaRef}>
+                    <div className="flex h-full">
+                      {item.imageUrls.map((url, idx) => (
+                        <div
+                          key={idx}
+                          className="flex-[0_0_100%] min-w-0 h-full relative select-none"
+                          onClick={() => handleImageClick(idx)}
+                        >
+                          <img
+                            src={url}
+                            alt={`${item.title} - image ${idx + 1}`}
+                            className="w-full h-full object-cover"
+                          />
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Maximize Button overlay */}
+                  <button
+                    onClick={() => handleImageClick(selectedIndex)}
+                    className="absolute top-3 right-3 p-2 bg-black/60 hover:bg-black/80 text-white rounded-full transition opacity-0 group-hover:opacity-100 cursor-pointer shadow-xs"
+                    title="Voir en grand"
+                  >
+                    <Maximize2 className="w-4 h-4" />
+                  </button>
+
+                  {/* Navigation Chevrons */}
+                  {item.imageUrls.length > 1 && (
+                    <>
+                      <button
+                        onClick={() => emblaApi?.scrollPrev()}
+                        className="absolute left-3 top-1/2 -translate-y-1/2 p-2 bg-white/95 hover:bg-white text-slate-700 rounded-full transition shadow-md border border-slate-100 cursor-pointer opacity-0 group-hover:opacity-100"
+                        aria-label="Image précédente"
+                      >
+                        <ChevronLeft className="w-4 h-4" />
+                      </button>
+                      <button
+                        onClick={() => emblaApi?.scrollNext()}
+                        className="absolute right-3 top-1/2 -translate-y-1/2 p-2 bg-white/95 hover:bg-white text-slate-700 rounded-full transition shadow-md border border-slate-100 cursor-pointer opacity-0 group-hover:opacity-100"
+                        aria-label="Image suivante"
+                      >
+                        <ChevronRight className="w-4 h-4" />
+                      </button>
+                    </>
+                  )}
+                </>
               ) : (
                 <div className="flex flex-col items-center justify-center text-slate-400">
                   <Package className="w-12 h-12 mb-3" />
@@ -361,15 +437,22 @@ export default function ItemDetailClient({ itemId }: ItemDetailClientProps) {
                 </div>
               )}
             </div>
+
+            {/* Thumbnail Navigation */}
             {item.imageUrls && item.imageUrls.length > 1 && (
               <div className="grid grid-cols-4 gap-2">
                 {item.imageUrls.map((url, idx) => (
-                  <div
+                  <button
                     key={idx}
-                    className="aspect-square rounded-md overflow-hidden bg-zinc-50 border border-brand-hairline"
+                    onClick={() => scrollTo(idx)}
+                    className={`aspect-square rounded-md overflow-hidden bg-zinc-50 border transition-all cursor-pointer ${
+                      selectedIndex === idx
+                        ? "border-brand-primary ring-2 ring-brand-primary/25 scale-95"
+                        : "border-brand-hairline hover:border-slate-300"
+                    }`}
                   >
                     <img src={url} alt="" className="w-full h-full object-cover" />
-                  </div>
+                  </button>
                 ))}
               </div>
             )}
@@ -687,6 +770,16 @@ export default function ItemDetailClient({ itemId }: ItemDetailClientProps) {
             </div>
           </div>
         </div>
+      )}
+
+      {/* Lightbox Component */}
+      {item.imageUrls && item.imageUrls.length > 0 && (
+        <Lightbox
+          open={lightboxOpen}
+          close={() => setLightboxOpen(false)}
+          index={lightboxIndex}
+          slides={item.imageUrls.map((url) => ({ src: url }))}
+        />
       )}
     </div>
   );

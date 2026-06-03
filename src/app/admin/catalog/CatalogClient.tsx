@@ -16,8 +16,11 @@ import {
   Upload,
   AlertTriangle,
   Loader2,
+  ChevronLeft,
+  ChevronRight,
 } from "lucide-react";
 import AdminLayout from "../AdminLayout";
+import ConfirmDialog from "@/components/ConfirmDialog";
 import { formatConvexError } from "@/lib/error";
 
 interface CatalogClientProps {
@@ -29,6 +32,22 @@ export default function CatalogClient({ token }: CatalogClientProps) {
   // Fetch items and categories
   const items = useQuery(api.items.list);
   const categories = useQuery(api.categories.list);
+
+  const [activeImageIndices, setActiveImageIndices] = useState<Record<string, number>>({});
+
+  const handleNextImage = (itemId: string, max: number) => {
+    setActiveImageIndices((prev) => {
+      const current = prev[itemId] || 0;
+      return { ...prev, [itemId]: (current + 1) % max };
+    });
+  };
+
+  const handlePrevImage = (itemId: string, max: number) => {
+    setActiveImageIndices((prev) => {
+      const current = prev[itemId] || 0;
+      return { ...prev, [itemId]: (current - 1 + max) % max };
+    });
+  };
 
   // Mutations
   const createItem = useMutation(api.items.create);
@@ -70,6 +89,10 @@ export default function CatalogClient({ token }: CatalogClientProps) {
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [step, setStep] = useState(1);
   const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
+
+  // Custom delete confirmation states
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [itemToDelete, setItemToDelete] = useState<Id<"items"> | null>(null);
 
   const nextStep = () => {
     if (step === 1) {
@@ -336,14 +359,23 @@ export default function CatalogClient({ token }: CatalogClientProps) {
     setIsModalOpen(false);
   };
 
-  // Delete handler
-  const handleItemDelete = async (id: Id<"items">) => {
-    if (!confirm("Voulez-vous vraiment supprimer cet objet du catalogue ?")) return;
+  // Delete trigger (opens custom ConfirmDialog instead of window.confirm)
+  const triggerItemDelete = (id: Id<"items">) => {
+    setItemToDelete(id);
+    setIsDeleteDialogOpen(true);
+  };
+
+  // Actual submit delete handler
+  const handleConfirmDelete = async () => {
+    if (!itemToDelete) return;
     try {
-      await removeItem({ token, id });
+      await removeItem({ token, id: itemToDelete });
       showToast("Matériel supprimé avec succès !", "success");
     } catch (err: any) {
       showToast(formatConvexError(err), "error");
+    } finally {
+      setIsDeleteDialogOpen(false);
+      setItemToDelete(null);
     }
   };
 
@@ -703,22 +735,60 @@ export default function CatalogClient({ token }: CatalogClientProps) {
             </div>
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-              {items.map((item) => (
-                <div
-                  key={item._id}
-                  className="bg-brand-card rounded-lg overflow-hidden border border-brand-hairline flex flex-col justify-between"
-                >
-                  {/* Image Preview */}
-                  <div className="aspect-video w-full bg-zinc-200 border-b border-brand-hairline flex items-center justify-center overflow-hidden relative">
-                    {item.imageUrls && item.imageUrls.length > 0 ? (
-                      <img
-                        src={item.imageUrls[0]}
-                        alt={item.title}
-                        className="w-full h-full object-cover"
-                      />
-                    ) : (
-                      <Package className="w-6 h-6 text-slate-400" />
-                    )}
+              {items.map((item) => {
+                const imageUrls = item.imageUrls || [];
+                const activeIdx = activeImageIndices[item._id] || 0;
+                const currentImgUrl = imageUrls[activeIdx];
+
+                return (
+                  <div
+                    key={item._id}
+                    className="bg-brand-card rounded-lg overflow-hidden border border-brand-hairline flex flex-col justify-between group/card"
+                  >
+                    {/* Image Preview */}
+                    <div className="aspect-video w-full bg-zinc-200 border-b border-brand-hairline flex items-center justify-center overflow-hidden relative">
+                      {currentImgUrl ? (
+                        <>
+                          <img
+                            src={currentImgUrl}
+                            alt={item.title}
+                            className="w-full h-full object-cover"
+                          />
+                          
+                          {/* Mini Slider Controls */}
+                          {imageUrls.length > 1 && (
+                            <>
+                              <button
+                                type="button"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handlePrevImage(item._id, imageUrls.length);
+                                }}
+                                className="absolute left-2 top-1/2 -translate-y-1/2 p-1.5 bg-black/50 hover:bg-black/75 text-white rounded-full transition cursor-pointer select-none opacity-0 group-hover/card:opacity-100 z-20"
+                              >
+                                <ChevronLeft className="w-3.5 h-3.5" />
+                              </button>
+                              <button
+                                type="button"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleNextImage(item._id, imageUrls.length);
+                                }}
+                                className="absolute right-2 top-1/2 -translate-y-1/2 p-1.5 bg-black/50 hover:bg-black/75 text-white rounded-full transition cursor-pointer select-none opacity-0 group-hover/card:opacity-100 z-20"
+                              >
+                                <ChevronRight className="w-3.5 h-3.5" />
+                              </button>
+                              
+                              {/* Dots / Indicator */}
+                              <div className="absolute bottom-2 left-1/2 -translate-x-1/2 bg-black/60 text-white px-2 py-0.5 rounded-full text-[10px] font-bold shadow-xs select-none z-15">
+                                {activeIdx + 1} / {imageUrls.length}
+                              </div>
+                            </>
+                          )}
+                        </>
+                      ) : (
+                        <Package className="w-6 h-6 text-slate-400" />
+                      )}
                     <div className="absolute top-2 right-2 bg-brand-dark/80 text-white px-2 py-0.5 rounded-sm text-xs font-bold">
                       Stock total : {item.stock}
                     </div>
@@ -757,7 +827,7 @@ export default function CatalogClient({ token }: CatalogClientProps) {
                         <span>Modifier</span>
                       </button>
                       <button
-                        onClick={() => handleItemDelete(item._id)}
+                        onClick={() => triggerItemDelete(item._id)}
                         className="flex items-center justify-center space-x-1.5 h-10 border border-brand-hairline hover:bg-rose-50 hover:border-rose-200 text-rose-600 rounded-md text-sm font-bold transition cursor-pointer"
                       >
                         <Trash2 className="w-3.5 h-3.5" />
@@ -766,7 +836,8 @@ export default function CatalogClient({ token }: CatalogClientProps) {
                     </div>
                   </div>
                 </div>
-              ))}
+              );
+            })}
             </div>
           )}
         </div>
@@ -925,6 +996,21 @@ export default function CatalogClient({ token }: CatalogClientProps) {
           </div>
         </div>
       )}
+
+      {/* Reusable Confirm Dialog replacing window.confirm */}
+      <ConfirmDialog
+        isOpen={isDeleteDialogOpen}
+        title="Supprimer le matériel"
+        description="Voulez-vous vraiment supprimer cet objet du catalogue ? Cette action est irréversible."
+        confirmText="Supprimer"
+        cancelText="Annuler"
+        isDanger={true}
+        onConfirm={handleConfirmDelete}
+        onCancel={() => {
+          setIsDeleteDialogOpen(false);
+          setItemToDelete(null);
+        }}
+      />
     </AdminLayout>
   );
 }
