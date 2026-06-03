@@ -217,7 +217,7 @@ export default function BookingsClient({ token }: BookingsClientProps) {
                       <div className="space-y-3">
                         <div className="flex items-center gap-2 text-sm text-slate-600 font-semibold">
                           <Truck className="w-4 h-4 text-slate-400 shrink-0" />
-                          <span>{booking.delivery ? "Livraison demandée" : "Retrait direct à l'atelier"}</span>
+                          <span>{booking.delivery ? "Livraison demandée" : "Retrait direct à la maison"}</span>
                         </div>
 
                         {booking.delivery && booking.deliveryAddress && (

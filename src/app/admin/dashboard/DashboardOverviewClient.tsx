@@ -1,5 +1,6 @@
 "use client";
 
+import { useState, useEffect } from "react";
 import { useQuery, useMutation } from "convex/react";
 import { api } from "@/convex/_generated/api";
 import { Id } from "@/convex/_generated/dataModel";
@@ -16,7 +17,13 @@ import {
   ArrowUpRight,
   User,
   Loader2,
+  QrCode,
+  Share2,
+  Copy,
+  Check,
+  X,
 } from "lucide-react";
+import { QRCodeSVG } from "qrcode.react";
 import AdminLayout from "../AdminLayout";
 
 import { formatConvexError } from "@/lib/error";
@@ -30,6 +37,24 @@ export default function DashboardOverviewClient({ token }: DashboardOverviewClie
   const { showToast } = useToast();
   const bookings = useQuery(api.bookings.list, { token });
   const items = useQuery(api.items.list);
+
+  // QR Code sharing states
+  const [isShareModalOpen, setIsShareModalOpen] = useState(false);
+  const [copied, setCopied] = useState(false);
+  const [catalogUrl, setCatalogUrl] = useState("");
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      setCatalogUrl(window.location.origin);
+    }
+  }, []);
+
+  const handleCopyLink = () => {
+    navigator.clipboard.writeText(catalogUrl);
+    setCopied(true);
+    showToast("Lien du catalogue copié dans le presse-papiers !", "success");
+    setTimeout(() => setCopied(false), 2000);
+  };
 
   const isLoading = bookings === undefined || items === undefined;
 
@@ -74,9 +99,20 @@ export default function DashboardOverviewClient({ token }: DashboardOverviewClie
             <h2 className="text-2xl font-bold tracking-tight text-brand-primary">Tableau de bord</h2>
             <p className="text-slate-500 text-sm mt-1">Vue d'ensemble de l'activité de location</p>
           </div>
-          <span className="self-start md:self-auto text-xs font-bold text-slate-600 bg-brand-soft border border-brand-hairline px-3 py-1.5 rounded-md">
-            Aujourd'hui : {new Date().toLocaleDateString("fr-FR", { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
-          </span>
+          
+          <div className="flex flex-wrap items-center gap-2 self-start md:self-auto">
+            <button
+              onClick={() => setIsShareModalOpen(true)}
+              className="flex items-center justify-center gap-1.5 px-3.5 py-1.5 bg-white border border-brand-hairline hover:bg-zinc-50 text-brand-primary rounded-md text-xs font-bold transition cursor-pointer shadow-2xs"
+            >
+              <QrCode className="w-3.5 h-3.5" />
+              <span>Partager le catalogue</span>
+            </button>
+
+            <span className="text-xs font-bold text-slate-600 bg-brand-soft border border-brand-hairline px-3 py-1.5 rounded-md">
+              Aujourd'hui : {new Date().toLocaleDateString("fr-FR", { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
+            </span>
+          </div>
         </div>
 
         {isLoading || !stats ? (
@@ -259,6 +295,66 @@ export default function DashboardOverviewClient({ token }: DashboardOverviewClie
           </>
         )}
       </div>
+
+      {/* QR Code Sharing Modal */}
+      {isShareModalOpen && (
+        <div className="fixed inset-0 z-50 overflow-hidden flex items-center justify-center">
+          <div
+            className="absolute inset-0 bg-slate-900/40 backdrop-blur-xs transition-opacity"
+            onClick={() => setIsShareModalOpen(false)}
+          />
+          <div className="relative bg-white rounded-xl border border-brand-hairline p-6 shadow-xl max-w-sm w-full mx-4 z-10 animate-in fade-in zoom-in-95 duration-200 text-slate-800 text-center font-sans">
+            <button
+              onClick={() => setIsShareModalOpen(false)}
+              className="absolute top-4 right-4 p-1 rounded-md text-slate-400 hover:bg-brand-soft hover:text-slate-700 transition cursor-pointer"
+              aria-label="Fermer"
+            >
+              <X className="w-5 h-5" />
+            </button>
+
+            <div className="mx-auto w-12 h-12 rounded-full bg-brand-soft flex items-center justify-center mb-3">
+              <QrCode className="w-6 h-6 text-brand-primary" />
+            </div>
+
+            <h3 className="text-lg font-bold text-brand-primary mb-1">Partager le Catalogue</h3>
+            <p className="text-xs text-slate-500 mb-6">Faites scanner ce QR Code pour faire des réservations en direct.</p>
+
+            <div className="bg-slate-50 border border-slate-200/60 rounded-xl p-4 mb-5 flex flex-col items-center justify-center">
+              {catalogUrl ? (
+                <QRCodeSVG
+                  value={catalogUrl}
+                  size={180}
+                  level="H"
+                  includeMargin={true}
+                  className="bg-white p-2 rounded-lg border border-slate-100 shadow-2xs"
+                />
+              ) : (
+                <div className="w-[180px] h-[180px] flex items-center justify-center bg-white rounded-lg border border-slate-100">
+                  <Loader2 className="w-6 h-6 text-brand-primary animate-spin" />
+                </div>
+              )}
+            </div>
+
+            <div className="space-y-3">
+              <div className="flex items-center border border-brand-hairline rounded-md bg-slate-50 p-1">
+                <input
+                  type="text"
+                  readOnly
+                  value={catalogUrl}
+                  className="flex-1 text-xs px-2.5 text-slate-600 bg-transparent focus:outline-hidden font-medium select-all truncate"
+                />
+                <button
+                  onClick={handleCopyLink}
+                  className="px-3 py-1.5 bg-brand-primary hover:bg-brand-primary-active text-white rounded text-xs font-bold transition flex items-center gap-1 cursor-pointer shrink-0"
+                >
+                  {copied ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
+                  <span>{copied ? "Copié" : "Copier"}</span>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </AdminLayout>
   );
 }

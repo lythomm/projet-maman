@@ -1,8 +1,9 @@
 "use client";
 
+import { useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { Calendar, Package, Settings, LogOut, LayoutDashboard } from "lucide-react";
+import { Calendar, Package, Settings, LogOut, LayoutDashboard, User, ChevronDown } from "lucide-react";
 import { adminLogoutAction } from "@/app/actions/auth";
 
 interface AdminLayoutProps {
@@ -12,6 +13,7 @@ interface AdminLayoutProps {
 export default function AdminLayout({ children }: AdminLayoutProps) {
   const pathname = usePathname();
   const router = useRouter();
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
 
   const handleLogout = async () => {
     await adminLogoutAction();
@@ -67,26 +69,48 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
             >
               Catalogue
             </Link>
-            <Link
-              href="/admin/settings"
-              className={`text-sm font-bold uppercase tracking-wider transition-all duration-200 border-b-2 pb-1 ${
-                pathname === "/admin/settings"
-                  ? "text-brand-primary border-brand-primary"
-                  : "text-slate-500 border-transparent hover:text-brand-primary"
-              }`}
-            >
-              Configuration
-            </Link>
           </nav>
 
-          {/* Right: Logout Button */}
-          <button
-            onClick={handleLogout}
-            className="flex items-center space-x-2 px-3 py-1.5 bg-white border border-brand-hairline hover:bg-rose-50 text-slate-700 hover:text-rose-600 rounded-md text-sm font-semibold transition"
-          >
-            <LogOut className="w-3.5 h-3.5" />
-            <span>Déconnexion</span>
-          </button>
+          {/* Right: User Dropdown Button */}
+          <div className="relative">
+            <button
+              onClick={() => setIsDropdownOpen(!isDropdownOpen)}
+              className="flex items-center space-x-1.5 px-3 py-1.5 bg-white border border-brand-hairline hover:bg-brand-soft text-slate-700 rounded-md text-sm font-semibold transition cursor-pointer select-none"
+            >
+              <div className="w-6 h-6 rounded-full bg-slate-100 flex items-center justify-center shrink-0 border border-brand-hairline">
+                <User className="w-3.5 h-3.5 text-slate-500" />
+              </div>
+              <span className="hidden sm:inline">Admin</span>
+              <ChevronDown className={`w-3 h-3 text-slate-400 transition-transform duration-250 ${isDropdownOpen ? "rotate-180" : ""}`} />
+            </button>
+
+            {isDropdownOpen && (
+              <>
+                <div className="fixed inset-0 z-40" onClick={() => setIsDropdownOpen(false)} />
+                <div className="absolute right-0 mt-2 w-48 bg-white border border-brand-hairline rounded-lg shadow-lg py-1 z-50 animate-in fade-in slide-in-from-top-2 duration-150">
+                  <Link
+                    href="/admin/settings"
+                    onClick={() => setIsDropdownOpen(false)}
+                    className="flex items-center space-x-2 px-4 py-2 text-sm text-slate-700 hover:bg-brand-soft hover:text-brand-primary transition font-semibold"
+                  >
+                    <Settings className="w-3.5 h-3.5 text-slate-400" />
+                    <span>Configuration</span>
+                  </Link>
+                  <hr className="border-slate-100 my-1" />
+                  <button
+                    onClick={() => {
+                      setIsDropdownOpen(false);
+                      handleLogout();
+                    }}
+                    className="w-full flex items-center space-x-2 px-4 py-2 text-sm text-rose-600 hover:bg-rose-50 transition font-bold text-left cursor-pointer"
+                  >
+                    <LogOut className="w-3.5 h-3.5 text-rose-600" />
+                    <span>Déconnexion</span>
+                  </button>
+                </div>
+              </>
+            )}
+          </div>
         </div>
       </header>
 
@@ -128,17 +152,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
               <Package className="w-5 h-5" />
               <span>Catalogue</span>
             </Link>
-            <Link
-              href="/admin/settings"
-              className={`flex flex-col items-center justify-center flex-1 py-1 gap-1 text-[10px] font-bold uppercase tracking-wider transition-all duration-200 ${
-                pathname === "/admin/settings"
-                  ? "text-brand-primary"
-                  : "text-slate-400 hover:text-brand-primary"
-              }`}
-            >
-              <Settings className="w-5 h-5" />
-              <span>Config</span>
-            </Link>
+
           </nav>
         </div>
 
