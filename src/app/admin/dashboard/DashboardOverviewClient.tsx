@@ -99,7 +99,7 @@ export default function DashboardOverviewClient({ token }: DashboardOverviewClie
             <h2 className="text-2xl font-bold tracking-tight text-brand-primary">Tableau de bord</h2>
             <p className="text-slate-500 text-sm mt-1">Vue d'ensemble de l'activité de location</p>
           </div>
-          
+
           <div className="flex flex-wrap items-center gap-2 self-start md:self-auto">
             <button
               onClick={() => setIsShareModalOpen(true)}
@@ -196,7 +196,7 @@ export default function DashboardOverviewClient({ token }: DashboardOverviewClie
                 </div>
 
                 {stats.recentPending.length === 0 ? (
-                  <div className="bg-brand-soft border border-brand-hairline rounded-lg p-8 text-center text-sm text-slate-500">
+                  <div className="bg-white border border-brand-hairline rounded-lg p-8 text-center text-sm text-slate-500">
                     Aucune nouvelle demande en attente. Tout est à jour !
                   </div>
                 ) : (
