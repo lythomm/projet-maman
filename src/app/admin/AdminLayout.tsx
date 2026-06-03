@@ -122,7 +122,7 @@ export default function AdminLayout({ children, fullWidth = false }: AdminLayout
       </header>
 
       {/* Main Container */}
-      <div className={`${fullWidth ? "max-w-[95%] xl:max-w-[98%]" : "max-w-6xl"} mx-auto px-4 sm:px-6 lg:px-8 py-10 pb-24 md:pb-10 flex-grow flex flex-col w-full`}>
+      <div className={`${fullWidth ? "max-w-full" : "max-w-6xl"} mx-auto px-4 sm:px-6 lg:px-8 py-10 pb-24 md:pb-10 flex-grow flex flex-col w-full`}>
         {/* Mobile Navigation bar - Fixed at the bottom like Instagram */}
         <div className="fixed bottom-0 left-0 right-0 z-40 bg-white border-t border-brand-hairline shadow-md md:hidden px-2 h-16 flex items-center justify-around">
           <nav className="w-full flex items-center justify-around h-full">
