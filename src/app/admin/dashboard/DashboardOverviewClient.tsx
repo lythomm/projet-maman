@@ -238,7 +238,7 @@ export default function DashboardOverviewClient({ token }: DashboardOverviewClie
                     <Calendar className="w-4 h-4 text-brand-primary" />
                     Prochaines locations validées
                   </h3>
-                  <Link href="/admin/bookings" className="text-xs font-bold text-brand-primary hover:underline flex items-center gap-0.5">
+                  <Link href="/admin/calendar" className="text-xs font-bold text-brand-primary hover:underline flex items-center gap-0.5">
                     Planning <ChevronRight className="w-3.5 h-3.5" />
                   </Link>
                 </div>
