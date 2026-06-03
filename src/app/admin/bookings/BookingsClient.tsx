@@ -11,6 +11,8 @@ import {
   Mail,
   Truck,
   Loader2,
+  MapPin,
+  Navigation,
 } from "lucide-react";
 import AdminLayout from "../AdminLayout";
 
@@ -122,6 +124,27 @@ export default function BookingsClient({ token }: BookingsClientProps) {
                         <span>{booking.delivery ? "Livraison requise" : "Retrait sur place"}</span>
                       </div>
                     </div>
+
+                    {booking.delivery && booking.deliveryAddress && (
+                      <div className="flex items-center justify-between gap-3 bg-slate-50 p-3 rounded-md border border-brand-hairline text-sm">
+                        <div className="flex items-start gap-2 min-w-0">
+                          <MapPin className="w-4 h-4 text-slate-400 shrink-0 mt-0.5" />
+                          <div className="min-w-0">
+                            <span className="text-xs font-bold text-slate-400 uppercase tracking-wider block mb-0.5">Adresse de livraison</span>
+                            <span className="text-slate-700 font-medium break-words">{booking.deliveryAddress}</span>
+                          </div>
+                        </div>
+                        <a
+                          href={`https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(booking.deliveryAddress)}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="flex items-center gap-1.5 bg-white hover:bg-brand-soft border border-brand-hairline text-brand-primary px-2.5 py-1.5 rounded text-xs font-bold transition shrink-0 cursor-pointer shadow-xs"
+                        >
+                          <Navigation className="w-3.5 h-3.5" />
+                          <span>Itinéraire</span>
+                        </a>
+                      </div>
+                    )}
 
                     {/* Items checklist */}
                     <div className="border-t border-slate-200/60 pt-3">
