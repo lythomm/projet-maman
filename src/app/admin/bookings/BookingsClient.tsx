@@ -64,7 +64,7 @@ export default function BookingsClient({ token }: BookingsClientProps) {
   return (
     <AdminLayout>
       <div className="space-y-6">
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-brand-hairline pb-4">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 ">
           <h2 className="text-2xl font-bold tracking-tight text-brand-primary">Suivi des Réservations</h2>
 
           <div className="flex bg-slate-100 p-1 rounded-lg border border-slate-200 w-fit">
@@ -142,10 +142,10 @@ export default function BookingsClient({ token }: BookingsClientProps) {
                 >
                   {/* Card Header: Request Date, Status, Total Location Price */}
                   <div className={`border-b border-brand-hairline px-6 py-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 ${isAccepted
-                      ? "bg-emerald-50/50"
-                      : isRejected
-                        ? "bg-rose-50/50"
-                        : "bg-white"
+                    ? "bg-emerald-50/50"
+                    : isRejected
+                      ? "bg-rose-50/50"
+                      : "bg-white"
                     }`}>
                     <div className="flex flex-wrap items-center gap-2 sm:gap-3">
                       <span className="text-xs font-semibold text-slate-500">
