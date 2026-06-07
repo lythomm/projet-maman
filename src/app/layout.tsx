@@ -3,7 +3,7 @@ import "./globals.css";
 import { ToastProvider } from "@/components/Toast";
 
 export const metadata: Metadata = {
-  title: "projet-maman",
+  title: "LSmaloc",
   description: "Catalogue de location de matériel pour vos événements",
 };
 

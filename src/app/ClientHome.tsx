@@ -223,11 +223,9 @@ export default function ClientHome() {
       <header className="sticky top-0 z-30 bg-white border-b border-brand-hairline">
         <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
           <div className="flex items-center space-x-2">
-            <div className="w-8 h-8 rounded-md bg-brand-primary flex items-center justify-center text-white font-bold text-sm">
-              p.
-            </div>
+            <img src="/logo.png" alt="Logo" className="w-8 h-8 object-contain" />
             <span className="font-semibold text-lg tracking-tight text-brand-primary">
-              projet-maman
+              LSmaloc
             </span>
           </div>
 

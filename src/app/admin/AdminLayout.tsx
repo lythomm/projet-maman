@@ -30,11 +30,9 @@ export default function AdminLayout({ children, fullWidth = false }: AdminLayout
 
           {/* Left: Brand Logo */}
           <div className="flex items-center space-x-2">
-            <div className="w-8 h-8 rounded-md bg-brand-primary flex items-center justify-center text-white font-bold text-sm">
-              p.
-            </div>
+            <img src="/logo.png" alt="Logo" className="w-8 h-8 object-contain" />
             <span className="font-semibold text-xl tracking-tight text-brand-primary">
-              projet-maman
+              LSmaloc
             </span>
           </div>
 
