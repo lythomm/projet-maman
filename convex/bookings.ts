@@ -170,8 +170,11 @@ export const updateStatus = mutation({
     const booking = await ctx.db.get(args.id);
     if (!booking) throw new Error("Réservation introuvable.");
 
-    // If accepting, double-check stock conflicts
+    // If accepting, double-check stock conflicts and signature
     if (args.status === "accepted") {
+      if (!booking.contractSignedAt) {
+        throw new Error("Le contrat doit être signé par le client avant d'accepter la réservation.");
+      }
       const bookings = await ctx.db
         .query("bookings")
         .withIndex("by_status", (q) => q.eq("status", "accepted"))
@@ -211,3 +214,61 @@ export const remove = mutation({
     await ctx.db.delete(args.id);
   },
 });
+
+// Get public contract details (Public access via unique booking ID)
+export const getPublicBooking = query({
+  args: { id: v.id("bookings") },
+  handler: async (ctx, args) => {
+    const booking = await ctx.db.get(args.id);
+    if (!booking) return null;
+
+    // Resolve items details with price and title
+    const itemsWithDetails = await Promise.all(
+      booking.items.map(async (item) => {
+        const detail = await ctx.db.get(item.itemId);
+        return {
+          ...item,
+          title: detail?.title || "Matériel supprimé",
+          price: detail?.price || 0,
+        };
+      })
+    );
+
+    return {
+      ...booking,
+      items: itemsWithDetails,
+    };
+  },
+});
+
+// Sign contract (Public access, checked to ensure status is pending)
+export const signContract = mutation({
+  args: {
+    id: v.id("bookings"),
+    signedName: v.string(),
+    ip: v.string(),
+  },
+  handler: async (ctx, args) => {
+    const booking = await ctx.db.get(args.id);
+    if (!booking) throw new Error("Réservation introuvable.");
+    if (booking.status !== "pending") {
+      throw new Error("Le contrat ne peut être signé que pour une réservation en attente.");
+    }
+    if (booking.contractSignedAt) {
+      throw new Error("Le contrat a déjà été signé.");
+    }
+    if (!args.signedName.trim()) {
+      throw new Error("Le nom de signature ne peut pas être vide.");
+    }
+
+    await ctx.db.patch(args.id, {
+      contractSignedAt: Date.now(),
+      contractSignedName: args.signedName,
+      contractSignedIp: args.ip,
+    });
+
+    console.log(`[EMAIL MOCK] Contrat signé par le client ${booking.firstName} ${booking.lastName} (IP: ${args.ip})`);
+    return args.id;
+  },
+});
+

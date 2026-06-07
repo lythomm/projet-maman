@@ -36,6 +36,9 @@ export default defineSchema({
       v.literal("rejected")
     ),
     createdAt: v.number(), // timestamp
+    contractSignedAt: v.optional(v.number()),
+    contractSignedName: v.optional(v.string()),
+    contractSignedIp: v.optional(v.string()),
   }).index("by_status", ["status"]),
 
   categories: defineTable({

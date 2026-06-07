@@ -14,6 +14,7 @@ import {
   Loader2,
   MapPin,
   Navigation,
+  Copy,
 } from "lucide-react";
 import AdminLayout from "../AdminLayout";
 
@@ -38,6 +39,20 @@ export default function BookingsClient({ token }: BookingsClientProps) {
   const rejectedCount = bookings?.filter((b) => b.status === "rejected").length ?? 0;
 
   const filteredBookings = bookings?.filter((b) => b.status === statusFilter) || [];
+
+  // Helper to format dates to French style (DD/MM/YYYY)
+  const formatDateFR = (dateStr: string) => {
+    const [y, m, d] = dateStr.split("-");
+    return `${d}/${m}/${y}`;
+  };
+
+  // Copy contract sharing text to clipboard
+  const handleCopyContractLink = (booking: any) => {
+    const contractUrl = `${window.location.origin}/contrat/${booking._id}`;
+    const text = `Bonjour ${booking.firstName} ! 😊 Voici le lien pour signer le contrat de location pour votre réservation du ${formatDateFR(booking.startDate)} au ${formatDateFR(booking.endDate)} : ${contractUrl}. J'ai besoin de votre signature en ligne pour pouvoir accepter et valider définitivement votre demande de location. N'hésitez pas à me contacter si besoin. À très vite !`;
+    navigator.clipboard.writeText(text);
+    showToast("Message et lien du contrat copiés !", "success");
+  };
 
   // Booking status update handler
   const handleBookingStatus = async (id: Id<"bookings">, status: "accepted" | "rejected" | "pending") => {
@@ -288,7 +303,21 @@ export default function BookingsClient({ token }: BookingsClientProps) {
                   {/* Card Footer: Action Controls */}
                   <div className="bg-white border-t border-brand-hairline px-6 py-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                     <div>
-                      {!isPending && (
+                      {isPending ? (
+                        <div className="flex flex-col gap-1">
+                          <div className="flex items-center gap-2">
+                            <span className={`inline-block w-2.5 h-2.5 rounded-full ${booking.contractSignedAt ? "bg-emerald-500 animate-pulse" : "bg-amber-500"}`}></span>
+                            <span className="text-xs font-bold text-slate-700">
+                              Contrat : {booking.contractSignedAt ? "Signé" : "En attente de signature"}
+                            </span>
+                          </div>
+                          {booking.contractSignedAt && (
+                            <p className="text-[10px] text-slate-400">
+                              Par {booking.contractSignedName} le {new Date(booking.contractSignedAt).toLocaleDateString("fr-FR")}
+                            </p>
+                          )}
+                        </div>
+                      ) : (
                         <div className="flex items-center gap-2">
                           <span className={`inline-block w-2.5 h-2.5 rounded-full ${isAccepted ? "bg-badge-emerald" : "bg-badge-pink"}`}></span>
                           <span className="text-xs text-slate-500 font-semibold">
@@ -301,12 +330,22 @@ export default function BookingsClient({ token }: BookingsClientProps) {
                     <div className="flex flex-col sm:flex-row-reverse items-stretch sm:items-center gap-2 w-full sm:w-auto">
                       {isPending ? (
                         <>
-                          <button
-                            onClick={() => handleBookingStatus(booking._id, "accepted")}
-                            className="w-full sm:w-auto px-5 py-2.5 bg-brand-primary hover:bg-brand-primary-active text-white rounded-lg text-sm font-bold transition cursor-pointer shadow-xs text-center justify-center inline-flex items-center"
-                          >
-                            Accepter la demande
-                          </button>
+                          {booking.contractSignedAt ? (
+                            <button
+                              onClick={() => handleBookingStatus(booking._id, "accepted")}
+                              className="w-full sm:w-auto px-5 py-2.5 bg-brand-primary hover:bg-brand-primary-active text-white rounded-lg text-sm font-bold transition cursor-pointer shadow-xs text-center justify-center inline-flex items-center"
+                            >
+                              Accepter la demande
+                            </button>
+                          ) : (
+                            <button
+                              onClick={() => handleCopyContractLink(booking)}
+                              className="w-full sm:w-auto px-5 py-2.5 bg-brand-primary hover:bg-brand-primary-active text-white rounded-lg text-sm font-bold transition cursor-pointer shadow-xs text-center justify-center inline-flex items-center gap-1.5"
+                            >
+                              <Copy className="w-4 h-4 text-white" />
+                              <span>Copier message contrat</span>
+                            </button>
+                          )}
                           <button
                             onClick={() => handleBookingStatus(booking._id, "rejected")}
                             className="w-full sm:w-auto px-4 py-2.5 border border-brand-hairline bg-white hover:bg-rose-50 hover:text-rose-600 text-slate-700 rounded-lg text-sm font-bold transition cursor-pointer shadow-2xs text-center justify-center inline-flex items-center"
