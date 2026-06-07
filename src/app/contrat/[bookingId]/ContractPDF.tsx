@@ -1,4 +1,4 @@
-import { Document, Page, Text, View, StyleSheet, Image } from "@react-pdf/renderer";
+import { Document, Page, Text, View, StyleSheet } from "@react-pdf/renderer";
 import { prettyDisplayDate } from "@/lib/date";
 
 const styles = StyleSheet.create({
@@ -23,14 +23,7 @@ const styles = StyleSheet.create({
     gap: 4,
   },
   logoContainer: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 6,
     marginBottom: 4,
-  },
-  logo: {
-    width: 24,
-    height: 24,
   },
   companyName: {
     fontSize: 14,
@@ -311,10 +304,9 @@ const styles = StyleSheet.create({
 
 interface ContractPDFProps {
   booking: any;
-  logoUrl?: string;
 }
 
-export default function ContractPDF({ booking, logoUrl }: ContractPDFProps) {
+export default function ContractPDF({ booking }: ContractPDFProps) {
   const isAlreadySigned = !!booking.contractSignedAt;
   const signatureDate = isAlreadySigned ? new Date(booking.contractSignedAt) : null;
 
@@ -325,7 +317,7 @@ export default function ContractPDF({ booking, logoUrl }: ContractPDFProps) {
     1,
     Math.ceil(
       (endDate.getTime() - startDate.getTime()) /
-        (1000 * 60 * 60 * 24)
+      (1000 * 60 * 60 * 24)
     ) + 1
   );
 
@@ -343,18 +335,13 @@ export default function ContractPDF({ booking, logoUrl }: ContractPDFProps) {
         <View style={styles.headerContainer}>
           <View style={styles.companyCol}>
             <View style={styles.logoContainer}>
-              {logoUrl ? (
-                <Image src={logoUrl} style={styles.logo} />
-              ) : (
-                <View style={{ width: 20, height: 20, backgroundColor: "#2d4a36" }} />
-              )}
               <Text style={styles.companyName}>LSmaloc</Text>
             </View>
             <Text style={styles.companyDetail}>Location de matériel événementiel</Text>
             <Text style={styles.companyDetail}>Contact : sabinely81700@gmail.com</Text>
-            <Text style={styles.companyDetail}>Site web : lsmaloc.fr</Text>
+            <Text style={styles.companyDetail}>Site web : lsmaloc.vercel.app</Text>
           </View>
-          
+
           <View style={styles.devisCol}>
             <Text style={styles.devisTitle}>CONTRAT DE LOCATION</Text>
             <Text style={styles.devisNumber}>N° CTR-{booking._id.substring(0, 8).toUpperCase()}</Text>
@@ -397,7 +384,7 @@ export default function ContractPDF({ booking, logoUrl }: ContractPDFProps) {
         {/* Items Table */}
         <View style={{ flex: 1 }}>
           <Text style={styles.sectionTitle}>Détail des prestations de location</Text>
-          
+
           <View style={styles.table}>
             {/* Table Header */}
             <View style={styles.tableHeader}>
@@ -467,11 +454,6 @@ export default function ContractPDF({ booking, logoUrl }: ContractPDFProps) {
         {/* Simple Page 2 Header */}
         <View style={[styles.headerContainer, { marginBottom: 15, paddingBottom: 10 }]}>
           <View style={styles.logoContainer}>
-            {logoUrl ? (
-              <Image src={logoUrl} style={styles.logo} />
-            ) : (
-              <View style={{ width: 20, height: 20, backgroundColor: "#2d4a36" }} />
-            )}
             <Text style={styles.companyName}>LSmaloc</Text>
           </View>
           <View style={styles.devisCol}>

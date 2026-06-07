@@ -148,9 +148,13 @@ export const list = query({
             };
           })
         );
+        const contractFileUrl = booking.contractFileId
+          ? await ctx.storage.getUrl(booking.contractFileId)
+          : undefined;
         return {
           ...booking,
           items: itemsWithDetails,
+          contractFileUrl,
         };
       })
     );
@@ -234,9 +238,14 @@ export const getPublicBooking = query({
       })
     );
 
+    const contractFileUrl = booking.contractFileId
+      ? await ctx.storage.getUrl(booking.contractFileId)
+      : undefined;
+
     return {
       ...booking,
       items: itemsWithDetails,
+      contractFileUrl,
     };
   },
 });
@@ -261,7 +270,35 @@ export const signContract = mutation({
       throw new Error("Le nom de signature ne peut pas être vide.");
     }
 
+    // Double-check stock conflicts before accepting
+    const acceptedBookings = await ctx.db
+      .query("bookings")
+      .withIndex("by_status", (q) => q.eq("status", "accepted"))
+      .collect();
+
+    const overlappingBookings = acceptedBookings.filter((b) =>
+      b._id !== args.id && dateOverlaps(booking.startDate, booking.endDate, b.startDate, b.endDate)
+    );
+
+    const allocated: Record<string, number> = {};
+    for (const b of overlappingBookings) {
+      for (const item of b.items) {
+        allocated[item.itemId] = (allocated[item.itemId] || 0) + item.quantity;
+      }
+    }
+
+    for (const reqItem of booking.items) {
+      const item = await ctx.db.get(reqItem.itemId);
+      if (!item) throw new Error("Matériel introuvable.");
+      const reserved = allocated[reqItem.itemId] || 0;
+      const available = item.stock - reserved;
+      if (reqItem.quantity > available) {
+        throw new Error(`Conflit de stock pour ${item.title}. Disponible : ${available}, Demandé : ${reqItem.quantity}`);
+      }
+    }
+
     await ctx.db.patch(args.id, {
+      status: "accepted",
       contractSignedAt: Date.now(),
       contractSignedName: args.signedName,
       contractSignedIp: args.ip,
@@ -269,6 +306,39 @@ export const signContract = mutation({
 
     console.log(`[EMAIL MOCK] Contrat signé par le client ${booking.firstName} ${booking.lastName} (IP: ${args.ip})`);
     return args.id;
+  },
+});
+
+// Save contract file storage ID
+export const saveContractFileId = mutation({
+  args: {
+    id: v.id("bookings"),
+    storageId: v.id("_storage"),
+  },
+  handler: async (ctx, args) => {
+    const booking = await ctx.db.get(args.id);
+    if (!booking) throw new Error("Réservation introuvable.");
+    if (!booking.contractSignedAt) {
+      throw new Error("Le contrat doit être signé avant de sauvegarder le fichier.");
+    }
+    await ctx.db.patch(args.id, {
+      contractFileId: args.storageId,
+    });
+  },
+});
+
+// Generate upload URL for public contract signing
+export const generateContractUploadUrl = mutation({
+  args: {
+    bookingId: v.id("bookings"),
+  },
+  handler: async (ctx, args) => {
+    const booking = await ctx.db.get(args.bookingId);
+    if (!booking) throw new Error("Réservation introuvable.");
+    if (booking.status !== "pending" && (booking.status !== "accepted" || booking.contractFileId)) {
+      throw new Error("Le contrat ne peut être signé que pour une réservation en attente ou nouvellement signée.");
+    }
+    return await ctx.storage.generateUploadUrl();
   },
 });
 

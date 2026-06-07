@@ -312,9 +312,21 @@ export default function BookingsClient({ token }: BookingsClientProps) {
                             </span>
                           </div>
                           {booking.contractSignedAt && (
-                            <p className="text-[10px] text-slate-400">
-                              Par {booking.contractSignedName} le {new Date(booking.contractSignedAt).toLocaleDateString("fr-FR")}
-                            </p>
+                            <div className="flex flex-col gap-1 mt-1">
+                              <p className="text-[10px] text-slate-400">
+                                Par {booking.contractSignedName} le {new Date(booking.contractSignedAt).toLocaleDateString("fr-FR")}
+                              </p>
+                              {booking.contractFileUrl && (
+                                <a
+                                  href={booking.contractFileUrl}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="text-[10px] text-brand-primary font-bold hover:underline inline-flex items-center gap-1 mt-0.5"
+                                >
+                                  📄 Télécharger le PDF signé archivé
+                                </a>
+                              )}
+                            </div>
                           )}
                         </div>
                       ) : (

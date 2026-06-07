@@ -39,6 +39,7 @@ export default defineSchema({
     contractSignedAt: v.optional(v.number()),
     contractSignedName: v.optional(v.string()),
     contractSignedIp: v.optional(v.string()),
+    contractFileId: v.optional(v.id("_storage")),
   }).index("by_status", ["status"]),
 
   categories: defineTable({

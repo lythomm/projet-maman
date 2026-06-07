@@ -32,6 +32,8 @@ interface ContractClientProps {
 export default function ContractClient({ bookingId }: ContractClientProps) {
   const booking = useQuery(api.bookings.getPublicBooking, { id: bookingId });
   const signContract = useMutation(api.bookings.signContract);
+  const generateContractUploadUrl = useMutation(api.bookings.generateContractUploadUrl);
+  const saveContractFileId = useMutation(api.bookings.saveContractFileId);
 
   const [signedName, setSignedName] = useState("");
   const [consent, setConsent] = useState(false);
@@ -39,15 +41,12 @@ export default function ContractClient({ bookingId }: ContractClientProps) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
-  const [logoUrl, setLogoUrl] = useState("");
-
   // Fetch client IP on mount
   useEffect(() => {
     fetch("/api/get-ip")
       .then((res) => res.json())
       .then((data) => setIp(data.ip || "127.0.0.1"))
       .catch(() => setIp("127.0.0.1"));
-    setLogoUrl(window.location.origin + "/logo.png");
   }, []);
 
   const handleSign = async (e: React.FormEvent) => {
@@ -71,6 +70,37 @@ export default function ContractClient({ bookingId }: ContractClientProps) {
         ip,
       });
       setSuccess(true);
+
+      // Generate the PDF blob and upload it
+      try {
+        const uploadUrl = await generateContractUploadUrl({ bookingId });
+        const { pdf } = await import("@react-pdf/renderer");
+        const { default: ContractPDF } = await import("./ContractPDF");
+        
+        const doc = <ContractPDF booking={{
+          ...booking,
+          contractSignedAt: Date.now(),
+          contractSignedName: signedName.trim(),
+          contractSignedIp: ip
+        }} />;
+        
+        const pdfBlob = await pdf(doc).toBlob();
+
+        const response = await fetch(uploadUrl, {
+          method: "POST",
+          headers: { "Content-Type": "application/pdf" },
+          body: pdfBlob,
+        });
+        const { storageId } = await response.json();
+        
+        await saveContractFileId({
+          id: bookingId,
+          storageId,
+        });
+      } catch (uploadErr) {
+        console.error("Erreur de sauvegarde du PDF signé dans le stockage:", uploadErr);
+      }
+
     } catch (err: any) {
       setError(formatConvexError(err));
     } finally {
@@ -122,13 +152,7 @@ export default function ContractClient({ bookingId }: ContractClientProps) {
         </div>
 
         {/* Dynamic PDF Viewer & Download Block */}
-        {logoUrl ? (
-          <ContractPDFSection booking={booking} logoUrl={logoUrl} />
-        ) : (
-          <div className="w-full h-[400px] flex items-center justify-center bg-white border border-slate-200 rounded-2xl shadow-sm">
-            <Loader2 className="w-8 h-8 text-brand-primary animate-spin" />
-          </div>
-        )}
+        <ContractPDFSection booking={booking} />
 
         {/* Signature Block (HTML) */}
         <div className="bg-white border border-slate-200 rounded-2xl shadow-sm p-6 sm:p-8">
