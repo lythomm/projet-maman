@@ -10,6 +10,7 @@ export default defineSchema({
     deposit: v.number(),                  // Caution per item
     stock: v.number(),                    // Max stock in inventory
     categoryId: v.optional(v.id("categories")),
+    visible: v.optional(v.boolean()),
   }),
 
   bookings: defineTable({

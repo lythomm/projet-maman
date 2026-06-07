@@ -18,6 +18,8 @@ import {
   Loader2,
   ChevronLeft,
   ChevronRight,
+  Eye,
+  EyeOff,
 } from "lucide-react";
 import AdminLayout from "../AdminLayout";
 import ConfirmDialog from "@/components/ConfirmDialog";
@@ -30,10 +32,37 @@ interface CatalogClientProps {
 export default function CatalogClient({ token }: CatalogClientProps) {
   const { showToast } = useToast();
   // Fetch items and categories
-  const items = useQuery(api.items.list);
+  const items = useQuery(api.items.list, { token });
   const categories = useQuery(api.categories.list);
 
   const [activeImageIndices, setActiveImageIndices] = useState<Record<string, number>>({});
+  const [selectedFilter, setSelectedFilter] = useState<string>("Tous");
+
+  // Group items by category name
+  const groupedItems = items
+    ? items.reduce(
+      (groups, item) => {
+        const catName = item.categoryName || "Autres";
+        if (!groups[catName]) {
+          groups[catName] = [];
+        }
+        groups[catName].push(item);
+        return groups;
+      },
+      {} as Record<string, typeof items>
+    )
+    : {};
+
+  const sortedCategories = Object.keys(groupedItems).sort((a, b) => {
+    if (a === "Autres") return 1;
+    if (b === "Autres") return -1;
+    return a.localeCompare(b);
+  });
+
+  const activeFilter = selectedFilter === "Tous" || sortedCategories.includes(selectedFilter)
+    ? selectedFilter
+    : "Tous";
+
 
   const handleNextImage = (itemId: string, max: number) => {
     setActiveImageIndices((prev) => {
@@ -69,6 +98,7 @@ export default function CatalogClient({ token }: CatalogClientProps) {
   const [price, setPrice] = useState(0);
   const [deposit, setDeposit] = useState(0);
   const [stock, setStock] = useState(1);
+  const [visible, setVisible] = useState(true);
   const [imageStorageIds, setImageStorageIds] = useState<string[]>([]);
   const [initialStorageIds, setInitialStorageIds] = useState<string[]>([]);
   const [imagePreviews, setImagePreviews] = useState<string[]>([]);
@@ -127,6 +157,7 @@ export default function CatalogClient({ token }: CatalogClientProps) {
     setPrice(0);
     setDeposit(0);
     setStock(1);
+    setVisible(true);
     setImageStorageIds([]);
     setInitialStorageIds([]);
     setImagePreviews([]);
@@ -146,6 +177,7 @@ export default function CatalogClient({ token }: CatalogClientProps) {
     setPrice(item.price);
     setDeposit(item.deposit);
     setStock(item.stock);
+    setVisible(item.visible !== false);
     setImageStorageIds(item.imageStorageIds || []);
     setInitialStorageIds(item.imageStorageIds || []);
     setImagePreviews(item.imageUrls || []);
@@ -313,6 +345,7 @@ export default function CatalogClient({ token }: CatalogClientProps) {
           stock,
           imageStorageIds: imageStorageIds as any,
           categoryId: catIdParam,
+          visible,
         });
       } else {
         await createItem({
@@ -324,6 +357,7 @@ export default function CatalogClient({ token }: CatalogClientProps) {
           stock,
           imageStorageIds: imageStorageIds as any,
           categoryId: catIdParam,
+          visible,
         });
       }
 
@@ -574,6 +608,18 @@ export default function CatalogClient({ token }: CatalogClientProps) {
                     </button>
                   </div>
                 </div>
+
+                <div className="pt-2">
+                  <label className="flex items-center space-x-3 cursor-pointer select-none">
+                    <input
+                      type="checkbox"
+                      checked={visible}
+                      onChange={(e) => setVisible(e.target.checked)}
+                      className="w-4 h-4 text-brand-primary border-slate-200 rounded-sm focus:ring-brand-primary accent-brand-primary"
+                    />
+                    <span className="text-sm font-semibold text-slate-700">Mettre en ligne (visible pour les clients)</span>
+                  </label>
+                </div>
               </div>
             )}
 
@@ -734,111 +780,193 @@ export default function CatalogClient({ token }: CatalogClientProps) {
               <p className="text-sm text-slate-400 mt-1">Cliquez sur ajouter du matériel pour commencer.</p>
             </div>
           ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-              {items.map((item) => {
-                const imageUrls = item.imageUrls || [];
-                const activeIdx = activeImageIndices[item._id] || 0;
-                const currentImgUrl = imageUrls[activeIdx];
-
-                return (
-                  <div
-                    key={item._id}
-                    className="bg-brand-card rounded-lg overflow-hidden border border-brand-hairline flex flex-col justify-between group/card"
+            <>
+              {/* Filter pills */}
+              <div className="flex flex-wrap gap-2">
+                <button
+                  type="button"
+                  onClick={() => setSelectedFilter("Tous")}
+                  className={`px-4 py-2 text-xs font-bold rounded-full border transition duration-200 cursor-pointer select-none ${activeFilter === "Tous"
+                    ? "bg-brand-primary text-white border-brand-primary shadow-xs"
+                    : "bg-white text-slate-600 border-slate-200 hover:border-slate-300 hover:bg-zinc-50"
+                    }`}
+                >
+                  Tous ({items.length})
+                </button>
+                {sortedCategories.map((catName) => (
+                  <button
+                    key={catName}
+                    type="button"
+                    onClick={() => setSelectedFilter(catName)}
+                    className={`px-4 py-2 text-xs font-bold rounded-full border transition duration-200 cursor-pointer select-none ${activeFilter === catName
+                      ? "bg-brand-primary text-white border-brand-primary shadow-xs"
+                      : "bg-white text-slate-600 border-slate-200 hover:border-slate-300 hover:bg-zinc-50"
+                      }`}
                   >
-                    {/* Image Preview */}
-                    <div className="aspect-video w-full bg-zinc-200 border-b border-brand-hairline flex items-center justify-center overflow-hidden relative">
-                      {currentImgUrl ? (
-                        <>
-                          <img
-                            src={currentImgUrl}
-                            alt={item.title}
-                            className="w-full h-full object-cover"
-                          />
-                          
-                          {/* Mini Slider Controls */}
-                          {imageUrls.length > 1 && (
-                            <>
-                              <button
-                                type="button"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  handlePrevImage(item._id, imageUrls.length);
-                                }}
-                                className="absolute left-2 top-1/2 -translate-y-1/2 p-1.5 bg-black/50 hover:bg-black/75 text-white rounded-full transition cursor-pointer select-none opacity-0 group-hover/card:opacity-100 z-20"
+                    {catName} ({groupedItems[catName].length})
+                  </button>
+                ))}
+              </div>
+
+              <div className="space-y-12">
+                {sortedCategories
+                  .filter((catName) => activeFilter === "Tous" || activeFilter === catName)
+                  .map((catName) => {
+                    const catItems = groupedItems[catName];
+                    return (
+                      <div key={catName} className="space-y-6">
+                        <div className="flex items-center space-x-4">
+                          <h2 className="text-lg font-bold tracking-tight text-brand-primary shrink-0 uppercase">
+                            {catName} <span className="text-xs text-slate-400 font-normal lowercase">({catItems.length})</span>
+                          </h2>
+                          <div className="h-px bg-slate-200 flex-grow" />
+                        </div>
+
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                          {catItems.map((item) => {
+                            const imageUrls = item.imageUrls || [];
+                            const activeIdx = activeImageIndices[item._id] || 0;
+                            const currentImgUrl = imageUrls[activeIdx];
+
+                            return (
+                              <div
+                                key={item._id}
+                                className="bg-brand-card rounded-lg overflow-hidden border border-brand-hairline flex flex-col justify-between group/card"
                               >
-                                <ChevronLeft className="w-3.5 h-3.5" />
-                              </button>
-                              <button
-                                type="button"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  handleNextImage(item._id, imageUrls.length);
-                                }}
-                                className="absolute right-2 top-1/2 -translate-y-1/2 p-1.5 bg-black/50 hover:bg-black/75 text-white rounded-full transition cursor-pointer select-none opacity-0 group-hover/card:opacity-100 z-20"
-                              >
-                                <ChevronRight className="w-3.5 h-3.5" />
-                              </button>
-                              
-                              {/* Dots / Indicator */}
-                              <div className="absolute bottom-2 left-1/2 -translate-x-1/2 bg-black/60 text-white px-2 py-0.5 rounded-full text-[10px] font-bold shadow-xs select-none z-15">
-                                {activeIdx + 1} / {imageUrls.length}
+                                {/* Image Preview */}
+                                <div className="aspect-video w-full bg-zinc-200 border-b border-brand-hairline flex items-center justify-center overflow-hidden relative">
+                                  {currentImgUrl ? (
+                                    <>
+                                      <img
+                                        src={currentImgUrl}
+                                        alt={item.title}
+                                        className={`w-full h-full object-cover transition-all duration-300 ${
+                                          item.visible === false ? "grayscale opacity-75" : ""
+                                        }`}
+                                      />
+                                      
+                                      {/* Mini Slider Controls */}
+                                      {imageUrls.length > 1 && (
+                                        <>
+                                          <button
+                                            type="button"
+                                            onClick={(e) => {
+                                              e.stopPropagation();
+                                              handlePrevImage(item._id, imageUrls.length);
+                                            }}
+                                            className="absolute left-2 top-1/2 -translate-y-1/2 p-1.5 bg-black/50 hover:bg-black/75 text-white rounded-full transition cursor-pointer select-none opacity-0 group-hover/card:opacity-100 z-20"
+                                          >
+                                            <ChevronLeft className="w-3.5 h-3.5" />
+                                          </button>
+                                          <button
+                                            type="button"
+                                            onClick={(e) => {
+                                              e.stopPropagation();
+                                              handleNextImage(item._id, imageUrls.length);
+                                            }}
+                                            className="absolute right-2 top-1/2 -translate-y-1/2 p-1.5 bg-black/50 hover:bg-black/75 text-white rounded-full transition cursor-pointer select-none opacity-0 group-hover/card:opacity-100 z-20"
+                                          >
+                                            <ChevronRight className="w-3.5 h-3.5" />
+                                          </button>
+                                          
+                                          {/* Dots / Indicator */}
+                                          <div className="absolute bottom-2 left-1/2 -translate-x-1/2 bg-black/60 text-white px-2 py-0.5 rounded-full text-[10px] font-bold shadow-xs select-none z-15">
+                                            {activeIdx + 1} / {imageUrls.length}
+                                          </div>
+                                        </>
+                                      )}
+                                    </>
+                                  ) : (
+                                    <Package className="w-6 h-6 text-slate-400" />
+                                  )}
+                                  <div className="absolute top-2 left-2 bg-brand-dark/80 text-white px-2 py-0.5 rounded-sm text-xs font-bold z-20">
+                                    Stock : {item.stock}
+                                  </div>
+                                  {item.visible === false && (
+                                    <div className="absolute bottom-2 left-2 bg-rose-600/90 text-white px-2 py-0.5 rounded-sm text-[10px] font-extrabold uppercase tracking-wider z-20">
+                                      Hors ligne
+                                    </div>
+                                  )}
+                                  <button
+                                    type="button"
+                                    onClick={async (e) => {
+                                      e.stopPropagation();
+                                      try {
+                                        await updateItem({
+                                          token,
+                                          id: item._id,
+                                          title: item.title,
+                                          description: item.description,
+                                          price: item.price,
+                                          deposit: item.deposit,
+                                          stock: item.stock,
+                                          imageStorageIds: item.imageStorageIds || [],
+                                          categoryId: item.categoryId,
+                                          visible: item.visible === false,
+                                        });
+                                        showToast(item.visible === false ? "Matériel mis en ligne !" : "Matériel masqué !", "success");
+                                      } catch (err: any) {
+                                        showToast(formatConvexError(err), "error");
+                                      }
+                                    }}
+                                    className="absolute top-2 right-2 p-1.5 bg-white/95 hover:bg-white text-slate-700 hover:text-brand-primary rounded-full shadow-md transition z-20 cursor-pointer select-none"
+                                    title={item.visible === false ? "Mettre en ligne" : "Masquer"}
+                                  >
+                                    {item.visible === false ? (
+                                      <EyeOff className="w-3.5 h-3.5 text-rose-500" />
+                                    ) : (
+                                      <Eye className="w-3.5 h-3.5 text-emerald-500" />
+                                    )}
+                                  </button>
+                                </div>
+
+                                {/* Content */}
+                                <div className="p-5 flex-1 flex flex-col justify-between">
+                                  <div>
+                                    <h3 className="font-bold text-brand-primary text-base leading-tight">{item.title}</h3>
+                                    <p className="text-xs text-slate-500 mt-1.5 line-clamp-2 leading-relaxed">{item.description}</p>
+
+                                    <div className="grid grid-cols-2 gap-2 mt-4 pt-3 border-t border-slate-200/60 text-sm">
+                                      <div>
+                                        <span className="text-slate-400 block">Prix</span>
+                                        <span className="font-bold text-slate-800">{Math.ceil(item.price)}€</span>
+                                      </div>
+                                      <div>
+                                        <span className="text-slate-400 block">Caution</span>
+                                        <span className="font-bold text-slate-800">{Math.ceil(item.deposit)}€</span>
+                                      </div>
+                                    </div>
+                                  </div>
+
+                                  {/* Controls */}
+                                  <div className="grid grid-cols-2 gap-2 mt-5">
+                                    <button
+                                      type="button"
+                                      onClick={() => openEditItemModal(item)}
+                                      className="flex items-center justify-center space-x-1.5 h-10 border border-brand-hairline hover:bg-white text-slate-700 rounded-md text-sm font-bold transition cursor-pointer"
+                                    >
+                                      <Edit2 className="w-3.5 h-3.5" />
+                                      <span>Modifier</span>
+                                    </button>
+                                    <button
+                                      type="button"
+                                      onClick={() => triggerItemDelete(item._id)}
+                                      className="flex items-center justify-center space-x-1.5 h-10 border border-brand-hairline hover:bg-rose-50 hover:border-rose-200 text-rose-600 rounded-md text-sm font-bold transition cursor-pointer"
+                                    >
+                                      <Trash2 className="w-3.5 h-3.5" />
+                                      <span>Supprimer</span>
+                                    </button>
+                                  </div>
+                                </div>
                               </div>
-                            </>
-                          )}
-                        </>
-                      ) : (
-                        <Package className="w-6 h-6 text-slate-400" />
-                      )}
-                    <div className="absolute top-2 right-2 bg-brand-dark/80 text-white px-2 py-0.5 rounded-sm text-xs font-bold">
-                      Stock total : {item.stock}
-                    </div>
-                    {item.categoryName && (
-                      <div className="absolute top-2 left-2 bg-brand-primary text-white px-2 py-0.5 rounded-sm text-[10px] font-extrabold uppercase tracking-wider">
-                        {item.categoryName}
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Content */}
-                  <div className="p-5 flex-1 flex flex-col justify-between">
-                    <div>
-                      <h3 className="font-bold text-brand-primary text-base leading-tight">{item.title}</h3>
-                      <p className="text-xs text-slate-500 mt-1.5 line-clamp-2 leading-relaxed">{item.description}</p>
-
-                      <div className="grid grid-cols-2 gap-2 mt-4 pt-3 border-t border-slate-200/60 text-sm">
-                        <div>
-                          <span className="text-slate-400 block">Prix</span>
-                          <span className="font-bold text-slate-800">{Math.ceil(item.price)}€</span>
-                        </div>
-                        <div>
-                          <span className="text-slate-400 block">Caution</span>
-                          <span className="font-bold text-slate-800">{Math.ceil(item.deposit)}€</span>
+                            );
+                          })}
                         </div>
                       </div>
-                    </div>
-
-                    {/* Controls */}
-                    <div className="grid grid-cols-2 gap-2 mt-5">
-                      <button
-                        onClick={() => openEditItemModal(item)}
-                        className="flex items-center justify-center space-x-1.5 h-10 border border-brand-hairline hover:bg-white text-slate-700 rounded-md text-sm font-bold transition cursor-pointer"
-                      >
-                        <Edit2 className="w-3.5 h-3.5" />
-                        <span>Modifier</span>
-                      </button>
-                      <button
-                        onClick={() => triggerItemDelete(item._id)}
-                        className="flex items-center justify-center space-x-1.5 h-10 border border-brand-hairline hover:bg-rose-50 hover:border-rose-200 text-rose-600 rounded-md text-sm font-bold transition cursor-pointer"
-                      >
-                        <Trash2 className="w-3.5 h-3.5" />
-                        <span>Supprimer</span>
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              );
-            })}
-            </div>
+                    );
+                  })}
+              </div>
+            </>
           )}
         </div>
       )}

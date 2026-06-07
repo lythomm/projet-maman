@@ -84,7 +84,7 @@ export default function ClientHome() {
 
 
   // Fetch items from Convex
-  const items = useQuery(api.items.list);
+  const items = useQuery(api.items.list, {});
   const settings = useQuery(api.settings.get);
 
   // Group items by category

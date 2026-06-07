@@ -15,6 +15,7 @@ export const getAvailableStock = query({
   handler: async (ctx, args) => {
     // 1. Get all items
     const items = await ctx.db.query("items").collect();
+    const visibleItems = items.filter((item) => item.visible !== false);
 
     // 2. Get all accepted bookings
     const bookings = await ctx.db
@@ -36,7 +37,7 @@ export const getAvailableStock = query({
     }
 
     // 5. Build available stock list
-    return items.map((item) => {
+    return visibleItems.map((item) => {
       const reserved = allocated[item._id] || 0;
       return {
         itemId: item._id,
@@ -98,7 +99,7 @@ export const create = mutation({
     // Check each requested item
     for (const reqItem of args.items) {
       const item = await ctx.db.get(reqItem.itemId);
-      if (!item) throw new Error("Matériel introuvable.");
+      if (!item || item.visible === false) throw new Error("Matériel introuvable ou indisponible.");
       const reserved = allocated[reqItem.itemId] || 0;
       const available = item.stock - reserved;
       if (reqItem.quantity > available) {

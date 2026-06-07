@@ -4,12 +4,28 @@ import { checkAuth } from "./admin";
 
 // List all items
 export const list = query({
-  args: {},
-  handler: async (ctx) => {
+  args: { token: v.optional(v.string()) },
+  handler: async (ctx, args) => {
+    let isAdmin = false;
+    if (args.token) {
+      const token = args.token;
+      const session = await ctx.db
+        .query("sessions")
+        .withIndex("by_token", (q) => q.eq("token", token))
+        .unique();
+      if (session && session.expiresAt >= Date.now()) {
+        isAdmin = true;
+      }
+    }
+
     const items = await ctx.db.query("items").collect();
+    const filteredItems = isAdmin
+      ? items
+      : items.filter((item) => item.visible !== false);
+
     // Resolve image URLs and category name
     const resolvedItems = await Promise.all(
-      items.map(async (item) => {
+      filteredItems.map(async (item) => {
         const imageUrls = await Promise.all(
           item.imageStorageIds.map((id) => ctx.storage.getUrl(id))
         );
@@ -27,10 +43,27 @@ export const list = query({
 
 // Get a single item
 export const get = query({
-  args: { id: v.id("items") },
+  args: { id: v.id("items"), token: v.optional(v.string()) },
   handler: async (ctx, args) => {
     const item = await ctx.db.get(args.id);
     if (!item) return null;
+
+    let isAdmin = false;
+    if (args.token) {
+      const token = args.token;
+      const session = await ctx.db
+        .query("sessions")
+        .withIndex("by_token", (q) => q.eq("token", token))
+        .unique();
+      if (session && session.expiresAt >= Date.now()) {
+        isAdmin = true;
+      }
+    }
+
+    if (!isAdmin && item.visible === false) {
+      return null;
+    }
+
     const imageUrls = await Promise.all(
       item.imageStorageIds.map((id) => ctx.storage.getUrl(id))
     );
@@ -63,6 +96,7 @@ export const create = mutation({
     deposit: v.number(),
     stock: v.number(),
     categoryId: v.optional(v.id("categories")),
+    visible: v.optional(v.boolean()),
   },
   handler: async (ctx, args) => {
     await checkAuth(ctx.db, args.token);
@@ -83,6 +117,7 @@ export const update = mutation({
     deposit: v.number(),
     stock: v.number(),
     categoryId: v.optional(v.id("categories")),
+    visible: v.optional(v.boolean()),
   },
   handler: async (ctx, args) => {
     await checkAuth(ctx.db, args.token);

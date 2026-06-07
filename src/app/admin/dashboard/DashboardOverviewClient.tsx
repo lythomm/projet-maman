@@ -36,7 +36,7 @@ interface DashboardOverviewClientProps {
 export default function DashboardOverviewClient({ token }: DashboardOverviewClientProps) {
   const { showToast } = useToast();
   const bookings = useQuery(api.bookings.list, { token });
-  const items = useQuery(api.items.list);
+  const items = useQuery(api.items.list, { token });
 
   // QR Code sharing states
   const [isShareModalOpen, setIsShareModalOpen] = useState(false);
