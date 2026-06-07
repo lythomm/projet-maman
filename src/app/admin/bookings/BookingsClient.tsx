@@ -303,15 +303,15 @@ export default function BookingsClient({ token }: BookingsClientProps) {
                   {/* Card Footer: Action Controls */}
                   <div className="bg-white border-t border-brand-hairline px-6 py-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                     <div>
-                      {isPending ? (
-                        <div className="flex flex-col gap-1">
-                          <div className="flex items-center gap-2">
-                            <span className={`inline-block w-2.5 h-2.5 rounded-full ${booking.contractSignedAt ? "bg-emerald-500 animate-pulse" : "bg-amber-500"}`}></span>
-                            <span className="text-xs font-bold text-slate-700">
-                              Contrat : {booking.contractSignedAt ? "Signé" : "En attente de signature"}
-                            </span>
-                          </div>
-                          {booking.contractSignedAt && (
+                      {isAccepted ? (
+                        booking.contractSignedAt ? (
+                          <div className="flex flex-col gap-1">
+                            <div className="flex items-center gap-2">
+                              <span className="inline-block w-2.5 h-2.5 rounded-full bg-emerald-500"></span>
+                              <span className="text-xs font-bold text-slate-700">
+                                Réservation acceptée & Contrat signé
+                              </span>
+                            </div>
                             <div className="flex flex-col gap-1 mt-1">
                               <p className="text-[10px] text-slate-400">
                                 Par {booking.contractSignedName} le {new Date(booking.contractSignedAt).toLocaleDateString("fr-FR")}
@@ -323,17 +323,24 @@ export default function BookingsClient({ token }: BookingsClientProps) {
                                   rel="noopener noreferrer"
                                   className="text-[10px] text-brand-primary font-bold hover:underline inline-flex items-center gap-1 mt-0.5"
                                 >
-                                  📄 Télécharger le PDF signé archivé
+                                  📄 Voir le PDF signé
                                 </a>
                               )}
                             </div>
-                          )}
-                        </div>
+                          </div>
+                        ) : (
+                          <div className="flex items-center gap-2">
+                            <span className="inline-block w-2.5 h-2.5 rounded-full bg-badge-emerald"></span>
+                            <span className="text-xs text-slate-500 font-semibold">
+                              Réservation acceptée (sans signature)
+                            </span>
+                          </div>
+                        )
                       ) : (
                         <div className="flex items-center gap-2">
-                          <span className={`inline-block w-2.5 h-2.5 rounded-full ${isAccepted ? "bg-badge-emerald" : "bg-badge-pink"}`}></span>
+                          <span className="inline-block w-2.5 h-2.5 rounded-full bg-badge-pink"></span>
                           <span className="text-xs text-slate-500 font-semibold">
-                            Demande traitée ({isAccepted ? "Acceptée" : "Refusée"})
+                            Demande refusée
                           </span>
                         </div>
                       )}
