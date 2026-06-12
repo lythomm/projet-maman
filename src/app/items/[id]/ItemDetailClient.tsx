@@ -67,6 +67,7 @@ export default function ItemDetailClient({ itemId }: ItemDetailClientProps) {
 
   // Fetch item, settings, and stock from Convex
   const item = useQuery(api.items.get, { id: validItemId });
+  const allItems = useQuery(api.items.list, {});
   const settings = useQuery(api.settings.get);
 
   const availableStocks = useQuery(
@@ -85,6 +86,18 @@ export default function ItemDetailClient({ itemId }: ItemDetailClientProps) {
     const stockInfo = availableStocks.find((s) => s.itemId === id);
     return stockInfo ? stockInfo.availableStock : defaultStock;
   };
+
+  // Get recommendations: same category first, excluding current item
+  const recommendations = allItems && item
+    ? allItems
+        .filter((i) => i._id !== item._id)
+        .sort((a, b) => {
+          if (a.categoryName === item.categoryName && b.categoryName !== item.categoryName) return -1;
+          if (a.categoryName !== item.categoryName && b.categoryName === item.categoryName) return 1;
+          return 0;
+        })
+        .slice(0, 3)
+    : [];
 
   // Load state from localStorage on mount
   useEffect(() => {
@@ -481,6 +494,91 @@ export default function ItemDetailClient({ itemId }: ItemDetailClientProps) {
             </div>
           </div>
         </div>
+
+        {/* Vous aimerez aussi */}
+        {recommendations.length > 0 && (
+          <div className="border-t border-slate-200/80 pt-12 mt-16 space-y-6">
+            <div className="flex items-center space-x-4">
+              <h2 className="text-xl font-bold tracking-tight text-brand-primary uppercase">
+                Vous aimerez aussi
+              </h2>
+              <div className="h-px bg-slate-200 flex-grow" />
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+              {recommendations.map((recItem) => {
+                const available = getStockFor(recItem._id, recItem.stock);
+                const isOutOfStock = available <= 0;
+
+                return (
+                  <Link
+                    key={recItem._id}
+                    href={`/items/${recItem._id}`}
+                    className="group flex flex-col bg-white rounded-lg overflow-hidden border border-slate-200 hover:shadow-md hover:border-slate-300 transition duration-200 cursor-pointer animate-fade-in"
+                  >
+                    <div className="relative aspect-video w-full bg-zinc-50 border-b border-slate-200/80 flex items-center justify-center overflow-hidden">
+                      {recItem.imageUrls && recItem.imageUrls.length > 0 ? (
+                        <img
+                          src={recItem.imageUrls[0]}
+                          alt={recItem.title}
+                          className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-102"
+                        />
+                      ) : (
+                        <div className="flex flex-col items-center justify-center text-slate-400">
+                          <Package className="w-8 h-8 mb-2" />
+                          <span className="text-[10px] font-medium tracking-tight">Pas d'image</span>
+                        </div>
+                      )}
+                      {isOutOfStock ? (
+                        <div className="absolute inset-0 bg-white/70 backdrop-blur-xs flex items-center justify-center">
+                          <span className="px-2.5 py-1 bg-zinc-800 text-white font-extrabold text-[10px] uppercase tracking-wider rounded-md">
+                            Épuisé
+                          </span>
+                        </div>
+                      ) : null}
+                    </div>
+
+                    <div className="p-4 flex-1 flex flex-col justify-between space-y-4">
+                      <div>
+                        {recItem.categoryName && (
+                          <span className="text-[10px] text-brand-accent uppercase tracking-wider font-extrabold block mb-1">
+                            {recItem.categoryName}
+                          </span>
+                        )}
+                        <h3 className="text-sm font-bold tracking-tight text-slate-900 leading-tight group-hover:text-brand-accent transition-colors duration-200">
+                          {recItem.title}
+                        </h3>
+                        <p className="text-xs text-slate-500 mt-1 line-clamp-2 leading-relaxed">
+                          {recItem.description}
+                        </p>
+                      </div>
+
+                      <div className="pt-2 border-t border-slate-100 flex flex-col justify-between">
+                        <div className="flex items-baseline space-x-1">
+                          <span className="text-lg font-extrabold text-slate-900">{Math.ceil(recItem.price)}€</span>
+                          <span className="text-[10px] text-slate-500 font-normal">/ jour</span>
+                        </div>
+                        {isOutOfStock ? (
+                          <p className="text-rose-600 text-[10px] font-bold mt-2">Actuellement indisponible.</p>
+                        ) : startDate && endDate ? (
+                          available <= 3 ? (
+                            <p className="text-amber-600 text-[10px] font-bold mt-2">
+                              Plus que {available} en stock.
+                            </p>
+                          ) : (
+                            <p className="text-emerald-600 text-[10px] font-bold mt-2">En stock.</p>
+                          )
+                        ) : (
+                          <p className="text-slate-500 text-[10px] italic mt-2">Vérifier stock aux dates voulues.</p>
+                        )}
+                      </div>
+                    </div>
+                  </Link>
+                );
+              })}
+            </div>
+          </div>
+        )}
       </main>
 
       {/* Date Picker Modal */}
