@@ -304,9 +304,21 @@ const styles = StyleSheet.create({
 
 interface ContractPDFProps {
   booking: any;
+  settings?: any;
 }
 
-export default function ContractPDF({ booking }: ContractPDFProps) {
+const DEFAULT_TERMS = `1. Durée de location : La durée de location est fixée à 3 jours calendaires à compter de la date de retrait ou de livraison du matériel.
+2. Propriété du matériel : Le matériel loué (vaisselle, décoration, mobilier, accessoires, etc.) demeure la propriété du loueur.
+3. Utilisation et soin : Le locataire s'engage à utiliser le matériel avec soin et à le restituer à la date convenue.
+4. Restitution de la vaisselle : La vaisselle n'a pas besoin d'être lavée, mais doit être débarrassée de tous déchets et restes alimentaires avant restitution.
+5. Éléments de décoration : Les éléments de décoration doivent être rendus en bon état, sans dégradation ni dommage apparent.
+6. Modalités financières et caution : Un acompte de 30 % du montant total de la location est exigé à la signature du contrat afin de valider la réservation. Le solde de la location devra être réglé intégralement au moment du retrait ou de la livraison du matériel. Une caution sous forme de chèque sera demandée lors du retrait.
+7. Dégradations, casse ou perte : Tout dégât apparent, casse, perte ou élément manquant sera déduit de la caution, selon le coût de remplacement du matériel concerné.
+8. Responsabilité : Le locataire est responsable du matériel pendant toute la durée de la location, de sa remise jusqu'à sa restitution.
+9. Retard de restitution : Tout retard de restitution entraînera la facturation d'une période de location supplémentaire de 3 jours calendaires, non fractionnable.
+10. Acceptation du règlement : Toute réservation ou signature du contrat vaut acceptation du présent règlement.`;
+
+export default function ContractPDF({ booking, settings }: ContractPDFProps) {
   const isAlreadySigned = !!booking.contractSignedAt;
   const signatureDate = isAlreadySigned ? new Date(booking.contractSignedAt) : null;
 
@@ -465,36 +477,28 @@ export default function ContractPDF({ booking }: ContractPDFProps) {
         {/* Conditions & Rules */}
         <View style={styles.legalSection}>
           <Text style={styles.sectionTitle}>Conditions générales et règles de location</Text>
-          <Text style={styles.legalText}>
-            <Text style={{ fontWeight: "bold" }}>1. Durée de location :</Text> La durée de location est fixée à 3 jours calendaires à compter de la date de retrait ou de livraison du matériel.
-          </Text>
-          <Text style={styles.legalText}>
-            <Text style={{ fontWeight: "bold" }}>2. Propriété du matériel :</Text> Le matériel loué (vaisselle, décoration, mobilier, accessoires, etc.) demeure la propriété du loueur.
-          </Text>
-          <Text style={styles.legalText}>
-            <Text style={{ fontWeight: "bold" }}>3. Utilisation et soin :</Text> Le locataire s'engage à utiliser le matériel avec soin et à le restituer à la date convenue.
-          </Text>
-          <Text style={styles.legalText}>
-            <Text style={{ fontWeight: "bold" }}>4. Restitution de la vaisselle :</Text> La vaisselle n'a pas besoin d'être lavée, mais doit être débarrassée de tous déchets et restes alimentaires avant restitution.
-          </Text>
-          <Text style={styles.legalText}>
-            <Text style={{ fontWeight: "bold" }}>5. Éléments de décoration :</Text> Les éléments de décoration doivent être rendus en bon état, sans dégradation ni dommage apparent.
-          </Text>
-          <Text style={styles.legalText}>
-            <Text style={{ fontWeight: "bold" }}>6. Modalités financières et caution :</Text> Un acompte de 30 % du montant total de la location est exigé à la signature du contrat afin de valider la réservation. Le solde de la location devra être réglé intégralement au moment du retrait ou de la livraison du matériel. Une caution sous forme de chèque sera demandée lors du retrait.
-          </Text>
-          <Text style={styles.legalText}>
-            <Text style={{ fontWeight: "bold" }}>7. Dégradations, casse ou perte :</Text> Tout dégât apparent, casse, perte ou élément manquant sera déduit de la caution, selon le coût de remplacement du matériel concerné.
-          </Text>
-          <Text style={styles.legalText}>
-            <Text style={{ fontWeight: "bold" }}>8. Responsabilité :</Text> Le locataire est responsable du matériel pendant toute la durée de la location, de sa remise jusqu'à sa restitution.
-          </Text>
-          <Text style={styles.legalText}>
-            <Text style={{ fontWeight: "bold" }}>9. Retard de restitution :</Text> Tout retard de restitution entraînera la facturation d'une période de location supplémentaire de 3 jours calendaires, non fractionnable.
-          </Text>
-          <Text style={styles.legalText}>
-            <Text style={{ fontWeight: "bold" }}>10. Acceptation du règlement :</Text> Toute réservation ou signature du contrat vaut acceptation du présent règlement.
-          </Text>
+          {(settings?.terms || DEFAULT_TERMS)
+            .split("\n")
+            .map((line: string) => line.trim())
+            .filter(Boolean)
+            .map((line: string, idx: number) => {
+              const colonIndex = line.indexOf(":");
+              if (colonIndex !== -1) {
+                const boldPart = line.substring(0, colonIndex + 1);
+                const normalPart = line.substring(colonIndex + 1);
+                return (
+                  <Text key={idx} style={styles.legalText}>
+                    <Text style={{ fontWeight: "bold" }}>{boldPart}</Text>
+                    {normalPart}
+                  </Text>
+                );
+              }
+              return (
+                <Text key={idx} style={styles.legalText}>
+                  {line}
+                </Text>
+              );
+            })}
         </View>
 
         {/* Signature Block */}

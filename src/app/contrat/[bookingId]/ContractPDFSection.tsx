@@ -6,9 +6,10 @@ import ContractPDF from "./ContractPDF";
 
 interface ContractPDFSectionProps {
   booking: any;
+  settings?: any;
 }
 
-const ContractPDFSection = memo(function ContractPDFSection({ booking }: ContractPDFSectionProps) {
+const ContractPDFSection = memo(function ContractPDFSection({ booking, settings }: ContractPDFSectionProps) {
   const hasSavedPdf = !!booking.contractFileUrl;
 
   return (
@@ -24,7 +25,7 @@ const ContractPDFSection = memo(function ContractPDFSection({ booking }: Contrac
           />
         ) : (
           <PDFViewer className="w-full h-[600px] sm:h-[650px] border-none" showToolbar={true}>
-            <ContractPDF booking={booking} />
+            <ContractPDF booking={booking} settings={settings} />
           </PDFViewer>
         )}
       </div>

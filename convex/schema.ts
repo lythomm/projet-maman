@@ -48,6 +48,7 @@ export default defineSchema({
 
   settings: defineTable({
     deliveryFee: v.number(),
+    terms: v.optional(v.string()),
   }),
 
   sessions: defineTable({

@@ -31,6 +31,7 @@ interface ContractClientProps {
 
 export default function ContractClient({ bookingId }: ContractClientProps) {
   const booking = useQuery(api.bookings.getPublicBooking, { id: bookingId });
+  const settings = useQuery(api.settings.get);
   const signContract = useMutation(api.bookings.signContract);
   const generateContractUploadUrl = useMutation(api.bookings.generateContractUploadUrl);
   const saveContractFileId = useMutation(api.bookings.saveContractFileId);
@@ -82,7 +83,7 @@ export default function ContractClient({ bookingId }: ContractClientProps) {
           contractSignedAt: Date.now(),
           contractSignedName: signedName.trim(),
           contractSignedIp: ip
-        }} />;
+        }} settings={settings} />;
         
         const pdfBlob = await pdf(doc).toBlob();
 
@@ -108,7 +109,7 @@ export default function ContractClient({ bookingId }: ContractClientProps) {
     }
   };
 
-  if (booking === undefined) {
+  if (booking === undefined || settings === undefined) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-slate-50">
         <div className="text-center">
@@ -152,7 +153,7 @@ export default function ContractClient({ bookingId }: ContractClientProps) {
         </div>
 
         {/* Dynamic PDF Viewer & Download Block */}
-        <ContractPDFSection booking={booking} />
+        <ContractPDFSection booking={booking} settings={settings} />
 
         {/* Signature Block (HTML) */}
         <div className="bg-white border border-slate-200 rounded-2xl shadow-sm p-6 sm:p-8">
