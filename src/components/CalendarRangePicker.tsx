@@ -20,7 +20,12 @@ export default function CalendarRangePicker({ startDate, endDate, onChange }: Ca
   const year = currentDate.getFullYear();
   const month = currentDate.getMonth();
 
+  const today = new Date();
+  const isCurrentMonthOrPast =
+    year < today.getFullYear() || (year === today.getFullYear() && month <= today.getMonth());
+
   const handlePrevMonth = () => {
+    if (isCurrentMonthOrPast) return;
     setCurrentDate(new Date(year, month - 1, 1));
   };
 
@@ -85,7 +90,8 @@ export default function CalendarRangePicker({ startDate, endDate, onChange }: Ca
         <button
           type="button"
           onClick={handlePrevMonth}
-          className="p-1.5 hover:bg-slate-100 rounded-lg text-slate-600 transition cursor-pointer"
+          disabled={isCurrentMonthOrPast}
+          className="p-1.5 hover:bg-slate-100 rounded-lg text-slate-600 transition cursor-pointer disabled:opacity-30 disabled:pointer-events-none"
         >
           <ChevronLeft className="w-5 h-5" />
         </button>

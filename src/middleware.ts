@@ -39,7 +39,7 @@ export async function middleware(request: NextRequest) {
       try {
         const isValid = await convex.query(api.admin.checkSession, { token });
         if (isValid) {
-          return NextResponse.redirect(new URL("/admin", request.url));
+          return NextResponse.redirect(new URL("/admin/dashboard", request.url));
         }
       } catch (e) {
         // Ignore check error on login redirect

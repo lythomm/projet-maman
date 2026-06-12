@@ -33,6 +33,8 @@ import "yet-another-react-lightbox/styles.css";
 import { formatConvexError } from "@/lib/error";
 import { prettyDisplayDate } from "@/lib/date";
 import CalendarRangePicker from "@/components/CalendarRangePicker";
+import ContactButton from "@/components/ContactButton";
+import Modal from "@/components/Modal";
 
 interface CartItem {
   itemId: Id<"items">;
@@ -296,18 +298,21 @@ export default function ItemDetailClient({ itemId }: ItemDetailClientProps) {
             </span>
           </Link>
 
-          <button
-            onClick={() => setIsCartOpen(true)}
-            className="relative p-2 rounded-full hover:bg-brand-soft transition duration-200 text-brand-primary"
-            aria-label="Voir le panier"
-          >
-            <ShoppingBag className="w-5 h-5" />
-            {totalItemsCount > 0 && (
-              <span className="absolute -top-1 -right-1 w-4 h-4 bg-brand-primary text-white text-[9px] font-extrabold rounded-full flex items-center justify-center border border-white">
-                {totalItemsCount}
-              </span>
-            )}
-          </button>
+          <div className="flex items-center space-x-2">
+            <ContactButton />
+            <button
+              onClick={() => setIsCartOpen(true)}
+              className="relative p-2 rounded-full hover:bg-brand-soft transition duration-200 text-brand-primary"
+              aria-label="Voir le panier"
+            >
+              <ShoppingBag className="w-5 h-5" />
+              {totalItemsCount > 0 && (
+                <span className="absolute -top-1 -right-1 w-4 h-4 bg-brand-primary text-white text-[9px] font-extrabold rounded-full flex items-center justify-center border border-white">
+                  {totalItemsCount}
+                </span>
+              )}
+            </button>
+          </div>
         </div>
       </header>
 
@@ -582,218 +587,193 @@ export default function ItemDetailClient({ itemId }: ItemDetailClientProps) {
       </main>
 
       {/* Date Picker Modal */}
-      {isDatePickerOpen && (
-        <div className="fixed inset-0 z-50 overflow-hidden flex items-center justify-center">
-          <div
-            className="absolute inset-0 bg-slate-900/40 backdrop-blur-xs transition-opacity"
-            onClick={() => setIsDatePickerOpen(false)}
-          />
-          <div className="relative bg-white rounded-xl border border-brand-hairline p-6 shadow-xl max-w-sm w-full mx-4 z-10">
-            <button
-              onClick={() => setIsDatePickerOpen(false)}
-              className="absolute top-4 right-4 p-1 rounded-md text-slate-400 hover:bg-brand-soft hover:text-slate-700 transition cursor-pointer"
-            >
-              <X className="w-5 h-5" />
-            </button>
-
-            <div className="flex items-center space-x-2.5 mb-4 text-brand-primary font-bold text-sm tracking-tight">
-              <Calendar className="w-4 h-4" />
-              <span>Période de location</span>
-            </div>
-
-            <div className="space-y-4">
-              <CalendarRangePicker
-                startDate={startDate}
-                endDate={endDate}
-                onChange={handleDateChange}
-              />
-
-              {startDate && endDate ? (
-                <div className="bg-brand-soft border border-brand-hairline rounded-xl p-3.5 text-center text-xs text-brand-primary font-bold">
-                  <span className="text-brand-accent font-extrabold text-sm block">
-                    Durée de location : {rentalDays} jour{rentalDays > 1 ? "s" : ""}
-                  </span>
-                </div>
-              ) : startDate ? (
-                <div className="bg-brand-soft border border-brand-hairline rounded-xl p-3.5 text-center text-xs text-slate-400 italic">
-                  Sélectionnez la date de fin sur le calendrier
-                </div>
-              ) : (
-                <div className="bg-slate-50 border border-slate-200 rounded-xl p-3 text-center text-xs text-slate-400 italic">
-                  Sélectionnez la date de début sur le calendrier
-                </div>
-              )}
-            </div>
-
-            <div className="mt-6 flex justify-end">
-              <button
-                onClick={() => setIsDatePickerOpen(false)}
-                disabled={!startDate || !endDate}
-                className="w-full h-10 bg-brand-primary hover:bg-brand-primary-active disabled:opacity-40 disabled:hover:bg-brand-primary text-white rounded-lg font-bold text-xs tracking-tight transition cursor-pointer"
-              >
-                Confirmer les dates
-              </button>
-            </div>
-          </div>
+      <Modal isOpen={isDatePickerOpen} onClose={() => setIsDatePickerOpen(false)} maxWidth="max-w-sm">
+        <div className="flex items-center space-x-2.5 mb-4 text-brand-primary font-bold text-sm tracking-tight">
+          <Calendar className="w-4 h-4" />
+          <span>Période de location</span>
         </div>
-      )}
+
+        <div className="space-y-4">
+          <CalendarRangePicker
+            startDate={startDate}
+            endDate={endDate}
+            onChange={handleDateChange}
+          />
+
+          {startDate && endDate ? (
+            <div className="bg-brand-soft border border-brand-hairline rounded-xl p-3.5 text-center text-xs text-brand-primary font-bold">
+              <span className="text-brand-accent font-extrabold text-sm block">
+                Durée de location : {rentalDays} jour{rentalDays > 1 ? "s" : ""}
+              </span>
+            </div>
+          ) : startDate ? (
+            <div className="bg-brand-soft border border-brand-hairline rounded-xl p-3.5 text-center text-xs text-slate-400 italic">
+              Sélectionnez la date de fin sur le calendrier
+            </div>
+          ) : (
+            <div className="bg-slate-50 border border-slate-200 rounded-xl p-3 text-center text-xs text-slate-400 italic">
+              Sélectionnez la date de début sur le calendrier
+            </div>
+          )}
+        </div>
+
+        <div className="mt-6 flex justify-end">
+          <button
+            onClick={() => setIsDatePickerOpen(false)}
+            disabled={!startDate || !endDate}
+            className="w-full h-10 bg-brand-primary hover:bg-brand-primary-active disabled:opacity-40 disabled:hover:bg-brand-primary text-white rounded-lg font-bold text-xs tracking-tight transition cursor-pointer"
+          >
+            Confirmer les dates
+          </button>
+        </div>
+      </Modal>
 
       {/* Error Dialog Modal (Unavailability message) */}
-      {isErrorDialogOpen && (
-        <div className="fixed inset-0 z-50 overflow-hidden flex items-center justify-center">
-          <div
-            className="absolute inset-0 bg-slate-900/40 backdrop-blur-xs transition-opacity"
-            onClick={() => setIsErrorDialogOpen(false)}
-          />
-          <div className="relative bg-white rounded-xl border border-rose-200 p-6 shadow-xl max-w-sm w-full mx-4 z-10">
-            <div className="flex items-center space-x-3 text-rose-600 mb-4">
-              <AlertTriangle className="w-6 h-6" />
-              <h3 className="text-base font-bold">Matériel indisponible</h3>
-            </div>
-            <p className="text-slate-600 text-sm leading-relaxed mb-6">
-              {unavailabilityMessage}
-            </p>
-            <div className="flex justify-end">
-              <button
-                onClick={() => setIsErrorDialogOpen(false)}
-                className="px-4 py-2 bg-rose-600 hover:bg-rose-700 text-white rounded-md font-bold text-xs tracking-tight transition"
-              >
-                Fermer
-              </button>
-            </div>
-          </div>
+      <Modal isOpen={isErrorDialogOpen} onClose={() => setIsErrorDialogOpen(false)} maxWidth="max-w-sm">
+        <div className="flex items-center space-x-3 text-rose-600 mb-4">
+          <AlertTriangle className="w-6 h-6" />
+          <h3 className="text-base font-bold">Matériel indisponible</h3>
         </div>
-      )}
+        <p className="text-slate-600 text-sm leading-relaxed mb-6">
+          {unavailabilityMessage}
+        </p>
+        <div className="flex justify-end">
+          <button
+            onClick={() => setIsErrorDialogOpen(false)}
+            className="px-4 py-2 bg-rose-600 hover:bg-rose-700 text-white rounded-md font-bold text-xs tracking-tight transition"
+          >
+            Fermer
+          </button>
+        </div>
+      </Modal>
 
       {/* Cart Drawer Overlay */}
-      {isCartOpen && (
-        <div className="fixed inset-0 z-50 overflow-hidden">
-          <div
-            className="absolute inset-0 bg-slate-900/40 backdrop-blur-xs transition-opacity"
-            onClick={() => setIsCartOpen(false)}
-          />
+      <div className={`fixed inset-0 z-50 overflow-hidden transition-all duration-300 ${isCartOpen ? "visible" : "invisible pointer-events-none"}`}>
+        <div
+          className={`absolute inset-0 bg-slate-900/40 backdrop-blur-xs transition-opacity duration-300 ${isCartOpen ? "opacity-100" : "opacity-0"}`}
+          onClick={() => setIsCartOpen(false)}
+        />
 
-          <div className="absolute inset-y-0 right-0 max-w-full flex pl-10">
-            <div className="w-screen max-w-md bg-white shadow-xl flex flex-col h-full border-l border-brand-hairline">
-              {/* Header Drawer */}
-              <div className="px-6 py-5 bg-white border-b border-brand-hairline flex items-center justify-between">
-                <div className="flex items-center space-x-2 text-brand-primary">
-                  <ShoppingBag className="w-4 h-4" />
-                  <h2 className="text-sm font-bold uppercase tracking-wider">Mon Panier</h2>
-                </div>
-                <button
-                  onClick={() => setIsCartOpen(false)}
-                  className="p-1 rounded-md text-slate-400 hover:bg-brand-soft hover:text-slate-700 transition"
-                >
-                  <X className="w-5 h-5" />
-                </button>
+        <div className="absolute inset-y-0 right-0 max-w-full flex pl-10">
+          <div className={`w-screen max-w-md bg-white shadow-xl flex flex-col h-full border-l border-brand-hairline transition-transform duration-300 ease-in-out ${isCartOpen ? "translate-x-0" : "translate-x-full"}`}>
+            {/* Header Drawer */}
+            <div className="px-6 py-5 bg-white border-b border-brand-hairline flex items-center justify-between">
+              <div className="flex items-center space-x-2 text-brand-primary">
+                <ShoppingBag className="w-4 h-4" />
+                <h2 className="text-sm font-bold uppercase tracking-wider">Mon Panier</h2>
               </div>
+              <button
+                onClick={() => setIsCartOpen(false)}
+                className="p-1 rounded-md text-slate-400 hover:bg-brand-soft hover:text-slate-700 transition"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
 
-              {/* Items List */}
-              <div className="flex-1 overflow-y-auto p-6 space-y-6">
-                {cart.length === 0 ? (
-                  <div className="text-center py-20 text-slate-400">
-                    <ShoppingBag className="w-8 h-8 mx-auto mb-3" />
-                    <p className="font-semibold text-slate-800 text-sm">Votre panier est vide</p>
-                    <p className="text-xs mt-1">Choisissez des articles du catalogue.</p>
-                  </div>
-                ) : (
-                  <>
-                    <div className="space-y-4">
-                      {cart.map((cartItem) => (
-                        <div
-                          key={cartItem.itemId}
-                          className="flex space-x-4 border-b border-brand-hairline pb-4"
-                        >
-                          <div className="w-14 h-14 rounded-md bg-zinc-100 border border-brand-hairline flex items-center justify-center overflow-hidden shrink-0">
-                            {cartItem.imageUrls.length > 0 ? (
-                              <img
-                                src={cartItem.imageUrls[0]}
-                                alt={cartItem.title}
-                                className="w-full h-full object-cover"
-                              />
-                            ) : (
-                              <Package className="w-5 h-5 text-slate-300" />
-                            )}
-                          </div>
+            {/* Items List */}
+            <div className="flex-1 overflow-y-auto p-6 space-y-6">
+              {cart.length === 0 ? (
+                <div className="text-center py-20 text-slate-400">
+                  <ShoppingBag className="w-8 h-8 mx-auto mb-3" />
+                  <p className="font-semibold text-slate-800 text-sm">Votre panier est vide</p>
+                  <p className="text-xs mt-1">Choisissez des articles du catalogue.</p>
+                </div>
+              ) : (
+                <>
+                  <div className="space-y-4">
+                    {cart.map((cartItem) => (
+                      <div
+                        key={cartItem.itemId}
+                        className="flex space-x-4 border-b border-brand-hairline pb-4"
+                      >
+                        <div className="w-14 h-14 rounded-md bg-zinc-100 border border-brand-hairline flex items-center justify-center overflow-hidden shrink-0">
+                          {cartItem.imageUrls.length > 0 ? (
+                            <img
+                              src={cartItem.imageUrls[0]}
+                              alt={cartItem.title}
+                              className="w-full h-full object-cover"
+                            />
+                          ) : (
+                            <Package className="w-5 h-5 text-slate-300" />
+                          )}
+                        </div>
 
-                          <div className="flex-1 min-w-0">
-                            <h4 className="font-bold text-brand-primary text-xs leading-snug truncate">
-                              {cartItem.title}
-                            </h4>
-                            <span className="text-[11px] text-slate-500">
-                              {Math.ceil(cartItem.price)}€ × {cartItem.quantity} × {rentalDays}j
-                            </span>
+                        <div className="flex-1 min-w-0">
+                          <h4 className="font-bold text-brand-primary text-xs leading-snug truncate">
+                            {cartItem.title}
+                          </h4>
+                          <span className="text-[11px] text-slate-500">
+                            {Math.ceil(cartItem.price)}€ × {cartItem.quantity} × {rentalDays}j
+                          </span>
 
-                            <div className="flex items-center justify-between mt-2">
-                              {/* Quantity selectors */}
-                              <div className="flex items-center border border-brand-hairline rounded-md bg-brand-soft p-0.5">
-                                <button
-                                  onClick={() => updateQuantity(cartItem.itemId, -1)}
-                                  className="p-1 text-slate-500 hover:bg-white rounded-sm transition"
-                                >
-                                  <Minus className="w-3 h-3" />
-                                </button>
-                                <span className="px-2 text-xs font-bold text-slate-800">
-                                  {cartItem.quantity}
-                                </span>
-                                <button
-                                  onClick={() => updateQuantity(cartItem.itemId, 1)}
-                                  disabled={cartItem.quantity >= cartItem.maxAvailable}
-                                  className="p-1 text-slate-500 hover:bg-white rounded-sm disabled:opacity-35 transition"
-                                >
-                                  <Plus className="w-3 h-3" />
-                                </button>
-                              </div>
-
+                          <div className="flex items-center justify-between mt-2">
+                            {/* Quantity selectors */}
+                            <div className="flex items-center border border-brand-hairline rounded-md bg-brand-soft p-0.5">
                               <button
-                                onClick={() => removeFromCart(cartItem.itemId)}
-                                className="text-slate-400 hover:text-rose-600 transition p-1"
-                                title="Supprimer"
+                                onClick={() => updateQuantity(cartItem.itemId, -1)}
+                                className="p-1 text-slate-500 hover:bg-white rounded-sm transition"
                               >
-                                <Trash2 className="w-3.5 h-3.5" />
+                                <Minus className="w-3 h-3" />
+                              </button>
+                              <span className="px-2 text-xs font-bold text-slate-800">
+                                {cartItem.quantity}
+                              </span>
+                              <button
+                                onClick={() => updateQuantity(cartItem.itemId, 1)}
+                                disabled={cartItem.quantity >= cartItem.maxAvailable}
+                                className="p-1 text-slate-500 hover:bg-white rounded-sm disabled:opacity-35 transition"
+                              >
+                                <Plus className="w-3 h-3" />
                               </button>
                             </div>
+
+                            <button
+                              onClick={() => removeFromCart(cartItem.itemId)}
+                              className="text-slate-400 hover:text-rose-600 transition p-1"
+                              title="Supprimer"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </button>
                           </div>
                         </div>
-                      ))}
-                    </div>
+                      </div>
+                    ))}
+                  </div>
 
-                    {/* Cost summary */}
-                    <div className="border-t border-brand-hairline pt-4 space-y-2.5">
-                      <div className="flex justify-between text-xs text-slate-500">
-                        <span>Sous-total matériel</span>
-                        <span>{itemsPriceTotal}€</span>
-                      </div>
-                      <div className="flex justify-between text-sm font-extrabold text-brand-primary border-t border-brand-hairline pt-2">
-                        <span>Total Location</span>
-                        <span>{grandTotal}€</span>
-                      </div>
-                      <div className="flex justify-between text-[11px] font-bold text-slate-700 bg-badge-orange/10 p-2.5 rounded-md border border-badge-orange/20 mt-2">
-                        <span className="flex items-center gap-1.5">
-                          <Info className="w-3.5 h-3.5 text-badge-orange" /> Caution totale à déposer
-                        </span>
-                        <span>{cautionTotal}€</span>
-                      </div>
+                  {/* Cost summary */}
+                  <div className="border-t border-brand-hairline pt-4 space-y-2.5">
+                    <div className="flex justify-between text-xs text-slate-500">
+                      <span>Sous-total matériel</span>
+                      <span>{itemsPriceTotal}€</span>
                     </div>
+                    <div className="flex justify-between text-sm font-extrabold text-brand-primary border-t border-brand-hairline pt-2">
+                      <span>Total Location</span>
+                      <span>{grandTotal}€</span>
+                    </div>
+                    <div className="flex justify-between text-[11px] font-bold text-slate-700 bg-badge-orange/10 p-2.5 rounded-md border border-badge-orange/20 mt-2">
+                      <span className="flex items-center gap-1.5">
+                        <Info className="w-3.5 h-3.5 text-badge-orange" /> Caution totale à déposer
+                      </span>
+                      <span>{cautionTotal}€</span>
+                    </div>
+                  </div>
 
-                    {/* Checkout Button */}
-                    <div className="border-t border-brand-hairline pt-6">
-                      <Link
-                        href="/checkout"
-                        className={`w-full h-11 bg-brand-primary hover:bg-brand-primary-active text-white font-bold text-sm rounded-md transition duration-200 flex items-center justify-center ${cart.length === 0 ? "opacity-50 pointer-events-none cursor-not-allowed" : ""
-                          }`}
-                      >
-                        Valider ma commande
-                      </Link>
-                    </div>
-                  </>
-                )}
-              </div>
+                  {/* Checkout Button */}
+                  <div className="border-t border-brand-hairline pt-6">
+                    <Link
+                      href="/checkout"
+                      className={`w-full h-11 bg-brand-primary hover:bg-brand-primary-active text-white font-bold text-sm rounded-md transition duration-200 flex items-center justify-center ${cart.length === 0 ? "opacity-50 pointer-events-none cursor-not-allowed" : ""
+                        }`}
+                    >
+                      Valider ma commande
+                    </Link>
+                  </div>
+                </>
+              )}
             </div>
           </div>
         </div>
-      )}
+      </div>
 
       {/* Lightbox Component */}
       {item.imageUrls && item.imageUrls.length > 0 && (

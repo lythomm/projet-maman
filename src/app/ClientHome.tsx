@@ -25,6 +25,7 @@ import {
 import { formatConvexError } from "@/lib/error";
 import { prettyDisplayDate } from "@/lib/date";
 import CalendarRangePicker from "@/components/CalendarRangePicker";
+import ContactButton from "@/components/ContactButton";
 
 interface CartItem {
   itemId: Id<"items">;
@@ -230,18 +231,21 @@ export default function ClientHome() {
             </span>
           </div>
 
-          <button
-            onClick={() => setIsCartOpen(true)}
-            className="relative p-2 rounded-full hover:bg-brand-soft transition duration-200 text-brand-primary"
-            aria-label="Voir le panier"
-          >
-            <ShoppingBag className="w-5 h-5" />
-            {totalItemsCount > 0 && (
-              <span className="absolute -top-1 -right-1 w-4 h-4 bg-brand-primary text-white text-[9px] font-extrabold rounded-full flex items-center justify-center border border-white">
-                {totalItemsCount}
-              </span>
-            )}
-          </button>
+          <div className="flex items-center space-x-2">
+            <ContactButton />
+            <button
+              onClick={() => setIsCartOpen(true)}
+              className="relative p-2 rounded-full hover:bg-brand-soft transition duration-200 text-brand-primary"
+              aria-label="Voir le panier"
+            >
+              <ShoppingBag className="w-5 h-5" />
+              {totalItemsCount > 0 && (
+                <span className="absolute -top-1 -right-1 w-4 h-4 bg-brand-primary text-white text-[9px] font-extrabold rounded-full flex items-center justify-center border border-white">
+                  {totalItemsCount}
+                </span>
+              )}
+            </button>
+          </div>
         </div>
       </header>
 
@@ -413,15 +417,14 @@ export default function ClientHome() {
       </main>
 
       {/* Cart Drawer Overlay */}
-      {isCartOpen && (
-        <div className="fixed inset-0 z-50 overflow-hidden">
-          <div
-            className="absolute inset-0 bg-slate-900/40 backdrop-blur-xs transition-opacity"
-            onClick={() => setIsCartOpen(false)}
-          />
+      <div className={`fixed inset-0 z-50 overflow-hidden transition-all duration-300 ${isCartOpen ? "visible" : "invisible pointer-events-none"}`}>
+        <div
+          className={`absolute inset-0 bg-slate-900/40 backdrop-blur-xs transition-opacity duration-300 ${isCartOpen ? "opacity-100" : "opacity-0"}`}
+          onClick={() => setIsCartOpen(false)}
+        />
 
-          <div className="absolute inset-y-0 right-0 max-w-full flex pl-10">
-            <div className="w-screen max-w-md bg-white shadow-xl flex flex-col h-full border-l border-brand-hairline">
+        <div className="absolute inset-y-0 right-0 max-w-full flex pl-10">
+          <div className={`w-screen max-w-md bg-white shadow-xl flex flex-col h-full border-l border-brand-hairline transition-transform duration-300 ease-in-out ${isCartOpen ? "translate-x-0" : "translate-x-full"}`}>
 
               {/* Header Drawer */}
               <div className="px-6 py-5 bg-white border-b border-brand-hairline flex items-center justify-between">
@@ -538,7 +541,6 @@ export default function ClientHome() {
             </div>
           </div>
         </div>
-      )}
       {/* Date Picker Modal */}
       {isDatePickerOpen && (
         <div className="fixed inset-0 z-50 overflow-hidden flex items-center justify-center">
