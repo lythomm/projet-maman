@@ -4,9 +4,9 @@ import { useState, useEffect } from "react";
 import { useQuery, useMutation } from "convex/react";
 import { api } from "@/convex/_generated/api";
 import { Id } from "@/convex/_generated/dataModel";
-import { 
-  FileText, 
-  CheckCircle2, 
+import {
+  FileText,
+  CheckCircle2,
   Loader2,
   ShieldCheck
 } from "lucide-react";
@@ -15,7 +15,7 @@ import dynamic from "next/dynamic";
 
 const ContractPDFSection = dynamic(
   () => import("./ContractPDFSection"),
-  { 
+  {
     ssr: false,
     loading: () => (
       <div className="w-full h-[400px] flex items-center justify-center bg-white border border-slate-200 rounded-2xl shadow-sm">
@@ -77,14 +77,14 @@ export default function ContractClient({ bookingId }: ContractClientProps) {
         const uploadUrl = await generateContractUploadUrl({ bookingId });
         const { pdf } = await import("@react-pdf/renderer");
         const { default: ContractPDF } = await import("./ContractPDF");
-        
+
         const doc = <ContractPDF booking={{
           ...booking,
           contractSignedAt: Date.now(),
           contractSignedName: signedName.trim(),
           contractSignedIp: ip
         }} settings={settings} />;
-        
+
         const pdfBlob = await pdf(doc).toBlob();
 
         const response = await fetch(uploadUrl, {
@@ -93,7 +93,7 @@ export default function ContractClient({ bookingId }: ContractClientProps) {
           body: pdfBlob,
         });
         const { storageId } = await response.json();
-        
+
         await saveContractFileId({
           id: bookingId,
           storageId,
@@ -142,8 +142,8 @@ export default function ContractClient({ bookingId }: ContractClientProps) {
 
   return (
     <div className="min-h-screen bg-slate-50/70 py-4 sm:py-10 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-3xl mx-auto space-y-4 sm:space-y-6">
-        
+      <div className="max-w-6xl mx-auto space-y-4 sm:space-y-6">
+
         {/* Top Control Bar */}
         <div className="flex justify-between items-center bg-white px-6 py-4 rounded-xl border border-brand-hairline shadow-2xs">
           <div className="flex items-center space-x-2 text-brand-primary">

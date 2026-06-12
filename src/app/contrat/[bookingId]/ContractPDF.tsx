@@ -440,20 +440,19 @@ export default function ContractPDF({ booking, settings }: ContractPDFProps) {
                 <Text style={styles.summaryLabel}>Total Matériel Net :</Text>
                 <Text style={styles.summaryValue}>{itemsSubtotal} €</Text>
               </View>
-              {booking.delivery && deliveryFee > 0 && (
-                <View style={styles.summaryRow}>
-                  <Text style={styles.summaryLabel}>Total Logistique :</Text>
-                  <Text style={styles.summaryValue}>{deliveryFee} €</Text>
-                </View>
-              )}
-              <View style={styles.divider} />
+              <View style={styles.summaryRow}>
+                <Text style={styles.summaryLabel}>Frais de livraison :</Text>
+                <Text style={styles.summaryValue}>
+                  {booking.delivery && deliveryFee > 0 ? `${deliveryFee} €` : "0 € (retrait par le client)"}
+                </Text>
+              </View>
               <View style={styles.summaryRow}>
                 <Text style={styles.summaryLabel}>Total Location :</Text>
                 <Text style={styles.summaryTotalValue}>{booking.totalPrice} €</Text>
               </View>
               <View style={styles.divider} />
               <View style={styles.summaryRow}>
-                <Text style={styles.summaryLabel}>Caution de garantie (non débitée) :</Text>
+                <Text style={styles.summaryLabel}>Caution de garantie :</Text>
                 <Text style={styles.summaryDepositValue}>{booking.totalDeposit} €</Text>
               </View>
             </View>
