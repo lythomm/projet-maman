@@ -61,7 +61,6 @@ export default function ItemDetailClient({ itemId }: ItemDetailClientProps) {
   const [unavailabilityMessage, setUnavailabilityMessage] = useState("");
 
   const [isLoaded, setIsLoaded] = useState(false);
-  const autoAddPending = useRef(false);
 
 
 
@@ -142,58 +141,13 @@ export default function ItemDetailClient({ itemId }: ItemDetailClientProps) {
     }
   }, [startDate, endDate, cart, isLoaded]);
 
-  // Reactive available stock auto-addition and validation
-  useEffect(() => {
-    if (!startDate || !endDate || !availableStocks || !item || !autoAddPending.current) return;
 
-    const available = getStockFor(item._id, item.stock);
-    const inCart = cart.find((i) => i.itemId === item._id);
-    const currentQty = inCart ? inCart.quantity : 0;
-    const nextQty = currentQty + 1;
-
-    autoAddPending.current = false;
-
-    if (available <= 0 || nextQty > available) {
-      // Clear dates since they resulted in unavailability
-      setStartDate("");
-      setEndDate("");
-      setUnavailabilityMessage(
-        `Ce matériel n'est plus disponible pour les dates sélectionnées (${prettyDisplayDate(startDate, endDate)}).`
-      );
-      setIsErrorDialogOpen(true);
-    } else {
-      // Add to cart
-      setCart((prev) => {
-        const existing = prev.find((i) => i.itemId === item._id);
-        if (existing) {
-          return prev.map((i) =>
-            i.itemId === item._id ? { ...i, quantity: nextQty, maxAvailable: available } : i
-          );
-        }
-        return [
-          ...prev,
-          {
-            itemId: item._id,
-            title: item.title,
-            price: item.price,
-            deposit: item.deposit,
-            quantity: 1,
-            maxAvailable: available,
-            imageUrls: item.imageUrls || [],
-          },
-        ];
-      });
-
-      showToast("Matériel ajouté au panier.", "success");
-    }
-  }, [availableStocks, startDate, endDate, item]);
 
   // Add to cart click handler
   const handleRentClick = () => {
     if (!item) return;
 
     if (!startDate || !endDate) {
-      autoAddPending.current = true;
       setIsDatePickerOpen(true);
       return;
     }
@@ -515,30 +469,6 @@ export default function ItemDetailClient({ itemId }: ItemDetailClientProps) {
                   <AlertTriangle className="w-4 h-4" />
                   <span>Épuisé aux dates choisies</span>
                 </button>
-              ) : inCartItem ? (
-                <div className="space-y-3">
-                  <span className="block text-[11px] font-bold text-slate-500 uppercase tracking-wider">
-                    Déjà dans votre panier
-                  </span>
-                  <div className="flex items-center justify-between bg-white border border-brand-hairline rounded-md p-1.5 max-w-xs">
-                    <button
-                      onClick={() => updateQuantity(item._id, -1)}
-                      className="p-2 text-slate-600 hover:bg-brand-soft rounded-md transition"
-                    >
-                      <Minus className="w-4 h-4" />
-                    </button>
-                    <span className="font-bold text-brand-primary text-sm">
-                      {inCartItem.quantity} réservé(s)
-                    </span>
-                    <button
-                      onClick={() => updateQuantity(item._id, 1)}
-                      disabled={inCartItem.quantity >= availableStock}
-                      className="p-2 text-slate-600 hover:bg-brand-soft rounded-md disabled:opacity-30 transition"
-                    >
-                      <Plus className="w-4 h-4" />
-                    </button>
-                  </div>
-                </div>
               ) : (
                 <button
                   onClick={handleRentClick}
@@ -604,7 +534,8 @@ export default function ItemDetailClient({ itemId }: ItemDetailClientProps) {
             <div className="mt-6 flex justify-end space-x-3">
               <button
                 onClick={() => setIsDatePickerOpen(false)}
-                className="px-4 py-2 bg-brand-primary hover:bg-brand-primary-active text-white rounded-md font-bold text-xs tracking-tight transition"
+                disabled={!startDate || !endDate}
+                className="px-4 py-2 bg-brand-primary hover:bg-brand-primary-active disabled:opacity-40 disabled:hover:bg-brand-primary text-white rounded-md font-bold text-xs tracking-tight transition"
               >
                 Confirmer
               </button>
