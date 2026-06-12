@@ -24,6 +24,7 @@ import {
 
 import { formatConvexError } from "@/lib/error";
 import { prettyDisplayDate } from "@/lib/date";
+import CalendarRangePicker from "@/components/CalendarRangePicker";
 
 interface CartItem {
   itemId: Id<"items">;
@@ -545,54 +546,50 @@ export default function ClientHome() {
             className="absolute inset-0 bg-slate-900/40 backdrop-blur-xs transition-opacity"
             onClick={() => setIsDatePickerOpen(false)}
           />
-          <div className="relative bg-white rounded-xl border border-brand-hairline p-6 shadow-xl max-w-md w-full mx-4 z-10">
+          <div className="relative bg-white rounded-xl border border-brand-hairline p-6 shadow-xl max-w-sm w-full mx-4 z-10">
             <button
               onClick={() => setIsDatePickerOpen(false)}
-              className="absolute top-4 right-4 p-1 rounded-md text-slate-400 hover:bg-brand-soft hover:text-slate-700 transition"
+              className="absolute top-4 right-4 p-1 rounded-md text-slate-400 hover:bg-brand-soft hover:text-slate-700 transition cursor-pointer"
             >
               <X className="w-5 h-5" />
             </button>
 
-            <div className="flex items-center space-x-2.5 mb-4 text-brand-primary font-semibold text-sm tracking-tight">
+            <div className="flex items-center space-x-2.5 mb-4 text-brand-primary font-bold text-sm tracking-tight">
               <Calendar className="w-4 h-4" />
-              <span>Définir la période de location</span>
+              <span>Période de location</span>
             </div>
 
             <div className="space-y-4">
-              <div>
-                <label htmlFor="modalStartDate" className="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1.5">
-                  Date de début
-                </label>
-                <input
-                  type="date"
-                  id="modalStartDate"
-                  min={todayStr}
-                  value={startDate}
-                  onChange={(e) => handleDateChange(e.target.value, endDate)}
-                  className="w-full h-10 px-3.5 rounded-md border border-brand-hairline bg-white text-slate-800 text-sm focus:outline-hidden focus:border-brand-primary transition"
-                />
-              </div>
-              <div>
-                <label htmlFor="modalEndDate" className="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1.5">
-                  Date de fin
-                </label>
-                <input
-                  type="date"
-                  id="modalEndDate"
-                  min={startDate || todayStr}
-                  value={endDate}
-                  onChange={(e) => handleDateChange(startDate, e.target.value)}
-                  className="w-full h-10 px-3.5 rounded-md border border-brand-hairline bg-white text-slate-800 text-sm focus:outline-hidden focus:border-brand-primary transition"
-                />
-              </div>
+              <CalendarRangePicker
+                startDate={startDate}
+                endDate={endDate}
+                onChange={handleDateChange}
+              />
+
+              {startDate && endDate ? (
+                <div className="bg-brand-soft border border-brand-hairline rounded-xl p-3.5 text-center text-xs text-brand-primary font-bold">
+                  <span className="text-brand-accent font-extrabold text-sm block">
+                    Durée de location : {rentalDays} jour{rentalDays > 1 ? "s" : ""}
+                  </span>
+                </div>
+              ) : startDate ? (
+                <div className="bg-brand-soft border border-brand-hairline rounded-xl p-3.5 text-center text-xs text-slate-400 italic">
+                  Sélectionnez la date de fin sur le calendrier
+                </div>
+              ) : (
+                <div className="bg-slate-50 border border-slate-200 rounded-xl p-3 text-center text-xs text-slate-400 italic">
+                  Sélectionnez la date de début sur le calendrier
+                </div>
+              )}
             </div>
 
-            <div className="mt-6 flex justify-end space-x-3">
+            <div className="mt-6 flex justify-end">
               <button
                 onClick={() => setIsDatePickerOpen(false)}
-                className="px-4 py-2 bg-brand-primary hover:bg-brand-primary-active text-white rounded-md font-bold text-xs tracking-tight transition"
+                disabled={!startDate || !endDate}
+                className="w-full h-10 bg-brand-primary hover:bg-brand-primary-active disabled:opacity-40 disabled:hover:bg-brand-primary text-white rounded-lg font-bold text-xs tracking-tight transition cursor-pointer"
               >
-                Confirmer
+                Confirmer les dates
               </button>
             </div>
           </div>
