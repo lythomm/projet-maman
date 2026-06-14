@@ -1,4 +1,4 @@
-import { internalAction } from "./_generated/server";
+import { action, internalAction } from "./_generated/server";
 import { v } from "convex/values";
 
 const RESEND_API_URL = "https://api.resend.com/emails";
@@ -156,6 +156,46 @@ export const sendContractSignedEmail = internalAction({
       });
     } catch (error) {
       console.error("Error sending contract signed admin email:", error);
+    }
+  },
+});
+
+export const sendContactMessage = action({
+  args: {
+    name: v.string(),
+    email: v.string(),
+    message: v.string(),
+  },
+  handler: async (ctx, args) => {
+    const apiKey = process.env.RESEND_API_KEY;
+    if (!apiKey) {
+      console.warn("RESEND_API_KEY environment variable is not set. Email sending skipped.");
+      return;
+    }
+
+    const fromEmail = process.env.RESEND_FROM_EMAIL || "onboarding@resend.dev";
+
+    const adminSubject = `[LSmaloc] ✉️ Nouveau message de contact - ${args.name}`;
+    const adminHtml = `
+      <h2>Nouveau message de contact reçu depuis le site !</h2>
+      <p><strong>Nom :</strong> ${args.name}</p>
+      <p><strong>Email client :</strong> ${args.email}</p>
+      <p><strong>Message :</strong></p>
+      <div style="background-color: #f8fafc; padding: 16px; border: 1px solid #e2e8f0; border-radius: 8px; font-family: sans-serif; white-space: pre-wrap; font-size: 14px; color: #334155; line-height: 1.5;">
+        ${args.message}
+      </div>
+    `;
+
+    try {
+      await sendEmailToAdmin({
+        apiKey,
+        from: fromEmail,
+        subject: adminSubject,
+        html: adminHtml,
+      });
+    } catch (error) {
+      console.error("Error sending contact message email:", error);
+      throw new Error("Impossible d'envoyer le message. Veuillez réessayer.");
     }
   },
 });
