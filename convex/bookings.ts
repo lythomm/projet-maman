@@ -1,6 +1,7 @@
 import { query, mutation, action } from "./_generated/server";
 import { v } from "convex/values";
 import { checkAuth } from "./admin";
+import { internal } from "./_generated/api";
 
 // Helper function to check if two date ranges overlap
 function dateOverlaps(startA: string, endA: string, startB: string, endB: string) {
@@ -68,6 +69,7 @@ export const create = mutation({
     ),
     totalPrice: v.number(),
     totalDeposit: v.number(),
+    siteUrl: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
     // 1. Validate dates are valid format (YYYY-MM-DD)
@@ -108,10 +110,27 @@ export const create = mutation({
     }
 
     // 3. Create booking
+    const { siteUrl, ...dbArgs } = args;
     const bookingId = await ctx.db.insert("bookings", {
-      ...args,
+      ...dbArgs,
       status: "pending",
       createdAt: Date.now(),
+    });
+
+    // Send emails via Resend action
+    await ctx.scheduler.runAfter(0, internal.emails.sendNewBookingEmails, {
+      bookingId,
+      firstName: args.firstName,
+      lastName: args.lastName,
+      email: args.email,
+      phone: args.phone,
+      startDate: args.startDate,
+      endDate: args.endDate,
+      totalPrice: args.totalPrice,
+      totalDeposit: args.totalDeposit,
+      delivery: args.delivery,
+      deliveryAddress: args.deliveryAddress,
+      siteUrl: args.siteUrl,
     });
 
     // Mock Email sending (just console log on backend)
@@ -302,6 +321,15 @@ export const signContract = mutation({
       contractSignedAt: Date.now(),
       contractSignedName: args.signedName,
       contractSignedIp: args.ip,
+    });
+
+    // Send emails via Resend action
+    await ctx.scheduler.runAfter(0, internal.emails.sendContractSignedEmail, {
+      bookingId: args.id,
+      firstName: booking.firstName,
+      lastName: booking.lastName,
+      email: booking.email,
+      ip: args.ip,
     });
 
     console.log(`[EMAIL MOCK] Contrat signé par le client ${booking.firstName} ${booking.lastName} (IP: ${args.ip})`);
