@@ -6,6 +6,7 @@ import { useToast } from "@/components/Toast";
 import { api } from "@/convex/_generated/api";
 import { Id } from "@/convex/_generated/dataModel";
 import Link from "next/link";
+import Image from "next/image";
 import {
   Calendar,
   ShoppingBag,
@@ -346,10 +347,12 @@ export default function ClientHome() {
                             {/* Image Area - Product UI embedded fragment */}
                             <div className="relative aspect-video w-full bg-zinc-50 border-b border-slate-200/80 flex items-center justify-center overflow-hidden">
                               {item.imageUrls && item.imageUrls.length > 0 ? (
-                                <img
+                                <Image
                                   src={item.imageUrls[0]}
                                   alt={item.title}
-                                  className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-102"
+                                  fill
+                                  sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
+                                  className="object-cover transition-transform duration-300 group-hover:scale-102"
                                 />
                               ) : (
                                 <div className="flex flex-col items-center justify-center text-slate-400">
@@ -458,9 +461,11 @@ export default function ClientHome() {
                         >
                           <div className="w-14 h-14 rounded-md bg-zinc-100 border border-brand-hairline flex items-center justify-center overflow-hidden shrink-0">
                             {item.imageUrls.length > 0 ? (
-                              <img
+                              <Image
                                 src={item.imageUrls[0]}
                                 alt={item.title}
+                                width={56}
+                                height={56}
                                 className="w-full h-full object-cover"
                               />
                             ) : (

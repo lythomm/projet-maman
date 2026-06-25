@@ -6,6 +6,7 @@ import { useToast } from "@/components/Toast";
 import { api } from "@/convex/_generated/api";
 import { Id } from "@/convex/_generated/dataModel";
 import Link from "next/link";
+import Image from "next/image";
 import {
   Calendar,
   ShoppingBag,
@@ -362,10 +363,12 @@ export default function ItemDetailClient({ itemId }: ItemDetailClientProps) {
                           className="flex-[0_0_100%] min-w-0 h-full relative select-none"
                           onClick={() => handleImageClick(idx)}
                         >
-                          <img
+                          <Image
                             src={url}
                             alt={`${item.title} - image ${idx + 1}`}
-                            className="w-full h-full object-cover"
+                            fill
+                            sizes="(max-width: 768px) 100vw, 50vw"
+                            className="object-cover"
                           />
                         </div>
                       ))}
@@ -422,7 +425,13 @@ export default function ItemDetailClient({ itemId }: ItemDetailClientProps) {
                         : "border-brand-hairline hover:border-slate-300"
                     }`}
                   >
-                    <img src={url} alt="" className="w-full h-full object-cover" />
+                    <Image
+                      src={url}
+                      alt=""
+                      width={100}
+                      height={100}
+                      className="w-full h-full object-cover"
+                    />
                   </button>
                 ))}
               </div>
@@ -523,10 +532,12 @@ export default function ItemDetailClient({ itemId }: ItemDetailClientProps) {
                   >
                     <div className="relative aspect-video w-full bg-zinc-50 border-b border-slate-200/80 flex items-center justify-center overflow-hidden">
                       {recItem.imageUrls && recItem.imageUrls.length > 0 ? (
-                        <img
+                        <Image
                           src={recItem.imageUrls[0]}
                           alt={recItem.title}
-                          className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-102"
+                          fill
+                          sizes="(max-width: 640px) 100vw, 250px"
+                          className="object-cover transition-transform duration-300 group-hover:scale-102"
                         />
                       ) : (
                         <div className="flex flex-col items-center justify-center text-slate-400">
@@ -688,9 +699,11 @@ export default function ItemDetailClient({ itemId }: ItemDetailClientProps) {
                       >
                         <div className="w-14 h-14 rounded-md bg-zinc-100 border border-brand-hairline flex items-center justify-center overflow-hidden shrink-0">
                           {cartItem.imageUrls.length > 0 ? (
-                            <img
+                            <Image
                               src={cartItem.imageUrls[0]}
                               alt={cartItem.title}
+                              width={56}
+                              height={56}
                               className="w-full h-full object-cover"
                             />
                           ) : (

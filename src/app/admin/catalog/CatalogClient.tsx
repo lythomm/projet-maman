@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Image from "next/image";
 import { useQuery, useMutation } from "convex/react";
 import { api } from "@/convex/_generated/api";
 import { Id } from "@/convex/_generated/dataModel";
@@ -199,7 +200,7 @@ export default function CatalogClient({ token }: CatalogClientProps) {
 
     try {
       const uploadPromises = Array.from(files).map(async (file) => {
-        const compressedFile = await compressImage(file, 1);
+        const compressedFile = await compressImage(file, 0.2);
         const uploadUrl = await generateUploadUrl({ token });
 
         const response = await fetch(uploadUrl, {
@@ -837,10 +838,12 @@ export default function CatalogClient({ token }: CatalogClientProps) {
                                 <div className="aspect-video w-full bg-zinc-200 border-b border-brand-hairline flex items-center justify-center overflow-hidden relative">
                                   {currentImgUrl ? (
                                     <>
-                                      <img
+                                      <Image
                                         src={currentImgUrl}
                                         alt={item.title}
-                                        className={`w-full h-full object-cover transition-all duration-300 ${
+                                        fill
+                                        sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
+                                        className={`object-cover transition-all duration-300 ${
                                           item.visible === false ? "grayscale opacity-75" : ""
                                         }`}
                                       />

@@ -7,6 +7,7 @@ import { useToast } from "@/components/Toast";
 import { api } from "@/convex/_generated/api";
 import { Id } from "@/convex/_generated/dataModel";
 import Link from "next/link";
+import Image from "next/image";
 import {
   Calendar,
   ShoppingBag,
@@ -344,7 +345,13 @@ export default function CheckoutClient() {
                 <div key={item.itemId} className="flex space-x-3 border-b border-brand-hairline pb-3 last:border-b-0 last:pb-0">
                   <div className="w-12 h-12 rounded-md bg-zinc-100 border border-brand-hairline flex items-center justify-center overflow-hidden shrink-0">
                     {item.imageUrls.length > 0 ? (
-                      <img src={item.imageUrls[0]} alt={item.title} className="w-full h-full object-cover" />
+                      <Image
+                        src={item.imageUrls[0]}
+                        alt={item.title}
+                        width={48}
+                        height={48}
+                        className="w-full h-full object-cover"
+                      />
                     ) : (
                       <Package className="w-4 h-4 text-slate-300" />
                     )}
