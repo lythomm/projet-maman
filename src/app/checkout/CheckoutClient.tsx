@@ -146,6 +146,7 @@ export default function CheckoutClient() {
         items: orderItems,
         totalPrice: grandTotal,
         totalDeposit: cautionTotal,
+        siteUrl: window.location.origin,
       });
 
       // Clear local storage on success
